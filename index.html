@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro-Print Production Calculator</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #eef2f7;
+        }
+        .card {
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.08);
+            border: none;
+        }
+        h3, h5 { color: #2c3e50; font-weight: 600; }
+        .book-row {
+            background: #f8fafc;
+            padding: 15px 12px 5px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: 0.3s;
+            border: 2px solid transparent;
+        }
+        .error-row {
+            border: 2px solid #e74c3c;
+            background: #fff5f5;
+        }
+        .summary-box {
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .bg-blue { background: #2e86de; }
+        .bg-green { background: #27ae60; }
+        .bg-red { background: #e74c3c; }
+        .bg-yellow { background: #f1c40f; color: #2c3e50; }
+        .table tbody tr:hover { background: #f1f7ff; }
+        label { font-weight: 600; font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px;}
+        
+        /* Print Styles - Hides inputs, shows only results */
+        @media print {
+            body { background: white; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+            .summary-box { color: black !important; border: 2px solid #000; box-shadow: none; }
+            .bg-blue, .bg-green, .bg-red, .bg-yellow { background: white !important; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container py-4">
+
+    <h3 class="mb-4 text-center">🖨 Printing Production Calculator</h3>
+
+    <div class="card p-4 mb-4 no-print">
+        <h5 class="mb-3">📘 Book Input</h5>
+        <div id="bookContainer">
+            <div class="book-row row align-items-center">
+                <div class="col-md-3 mb-2">
+                    <input class="form-control title" placeholder="Book Title (e.g. Math Grade 1)">
+                </div>
+                <div class="col-md-2 mb-2">
+                    <input class="form-control pages" type="number" placeholder="Pages" min="4">
+                </div>
+                <div class="col-md-2 mb-2">
+                    <input class="form-control qty" type="number" placeholder="Qty" min="1">
+                </div>
+                <div class="col-md-2 mb-2">
+                    <select class="form-select material">
+                        <option value="WF">WF (Woodfree)</option>
+                        <option value="MT">MT (Art Paper)</option>
+                        <option value="GL">GL (Glossy)</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <select class="form-select binding">
+                        <option value="Perfect">Perfect Bound</option>
+                        <option value="Staple">Staple (Saddle)</option>
+                    </select>
+                </div>
+                <div class="col-md-1 mb-2 text-end">
+                    <button class="btn btn-outline-danger removeRow" title="Remove Book"><i class="fa fa-trash"></i></button>
+                </div>
+            </div>
+        </div>
+        <div>
+            <button class="btn btn-success mt-2 px-4" id="addRow">➕ Add Another Book</button>
+        </div>
+    </div>
+
+    <div class="row mb-4 no-print">
+        <div class="col-lg-6 mb-3">
+            <div class="card p-4 h-100">
+                <h5 class="mb-3">⚙️ Machine & Material Capacities</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label>Daily Cap. (Sheets)</label>
+                        <input id="dailyCapacity" class="form-control" type="number" min="1" value="50000">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Waste (%)</label>
+                        <input id="waste" class="form-control" type="number" min="0" value="5">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Blanket Life</label>
+                        <input id="blanketLife" class="form-control" type="number" min="1" value="500000">
+                    </div>
+                    <div class="col-md-4">
+                        <label>A1 Sheets/Pack</label>
+                        <input id="a1Pack" class="form-control" type="number" min="1" value="500">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Cover Pack Size</label>
+                        <input id="coverPack" class="form-control" type="number" min="1" value="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-3">
+            <div class="card p-4 h-100">
+                <h5 class="mb-3">📦 Consumable Yields (Per Unit)</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label>Ink Cap. (Sheets)</label>
+                        <input id="inkCapacity" class="form-control" type="number" min="1" value="120000">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Alu Cap. (Sheets)</label>
+                        <input id="aluCapacity" class="form-control" type="number" min="1" value="200000">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Powder (Sheets)</label>
+                        <input id="powderCapacity" class="form-control" type="number" min="1" value="200000">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Glue (Books)</label>
+                        <input id="glueCapacity" class="form-control" type="number" min="1" value="10000">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Laminate (Books)</label>
+                        <input id="laminateCapacity" class="form-control" type="number" min="1" value="10000">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Staples (Books)</label>
+                        <input id="stapleCapacity" class="form-control" type="number" min="1" value="10000">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mb-4 no-print d-flex justify-content-center gap-3">
+        <button id="calculate" class="btn btn-primary btn-lg px-5 shadow">📊 Calculate Master Production Run</button>
+        <button id="printTicket" class="btn btn-secondary btn-lg px-4 shadow" style="display:none;"><i class="fa fa-print"></i> Print Job Ticket</button>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="summary-box bg-blue">
+                <div class="small text-uppercase mb-1">Total A2 Sheets</div>
+                <h3 id="insideSheets" class="mb-0">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box bg-green">
+                <div class="small text-uppercase mb-1">Inside Paper Packs</div>
+                <h3 id="insidePack" class="mb-0">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box bg-yellow">
+                <div class="small text-uppercase mb-1">Cover Paper Packs</div>
+                <h3 id="coverPackNeed" class="mb-0">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="summary-box bg-red">
+                <div class="small text-uppercase mb-1">Total CTP Plates</div>
+                <h3 id="ctpResult" class="mb-0">0</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0">📋 Job Breakdown</h5>
+                    <span class="badge bg-secondary p-2" id="productionDays">0 Days Scheduled</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Title</th>
+                                <th>Pages</th>
+                                <th>Qty</th>
+                                <th>Plates</th>
+                                <th>A2 Sheets</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookDetailTable">
+                            <tr><td colspan="6" class="text-muted">No data calculated yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3 h-100">
+                <h5 class="mb-3">🛠 Parts & Consumables Required</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center align-middle mb-0">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>Ink (Sets)</th>
+                                <th>Alu (Bot)</th>
+                                <th>Powder</th>
+                                <th>Blanket</th>
+                                <th>Glue</th>
+                                <th>Lam</th>
+                                <th>Staples</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="inkResult">0</td>
+                                <td id="aluResult">0</td>
+                                <td id="powderResult">0</td>
+                                <td id="blanketResult">0</td>
+                                <td id="glueResult">0</td>
+                                <td id="laminateResult">0</td>
+                                <td id="stapleResult">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const bookContainer = document.getElementById('bookContainer');
+    const bookDetailTable = document.getElementById('bookDetailTable');
+    
+    // --- Add/Remove Rows (Vanilla JS) ---
+    document.getElementById('addRow').addEventListener('click', () => {
+        const firstRow = bookContainer.querySelector('.book-row');
+        const newRow = firstRow.cloneNode(true);
+        
+        // Clear inputs and reset selects
+        newRow.querySelectorAll('input').forEach(input => input.value = '');
+        newRow.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+        newRow.classList.remove('error-row');
+        
+        bookContainer.appendChild(newRow);
+    });
+
+    bookContainer.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.removeRow');
+        if (removeBtn) {
+            const rows = bookContainer.querySelectorAll('.book-row');
+            if (rows.length > 1) {
+                removeBtn.closest('.book-row').remove();
+            } else {
+                alert("You must have at least one book in the job.");
+            }
+        }
+    });
+
+    // --- Print Functionality ---
+    document.getElementById('printTicket').addEventListener('click', () => {
+        window.print();
+    });
+
+    // --- Main Calculator (Vanilla JS) ---
+    document.getElementById('calculate').addEventListener('click', () => {
+        
+        // 1. Fetch Capacities & Constants safely
+        const getVal = (id, fallback) => parseFloat(document.getElementById(id).value) || fallback;
+        
+        let waste = getVal('waste', 0) / 100;
+        let dailyCap = getVal('dailyCapacity', 1);
+        let inkCap = getVal('inkCapacity', 1);
+        let aluCap = getVal('aluCapacity', 1);
+        let powderCap = getVal('powderCapacity', 1);
+        let blanketLife = getVal('blanketLife', 1);
+        let glueCap = getVal('glueCapacity', 1);
+        let laminateCap = getVal('laminateCapacity', 1);
+        let stapleCap = getVal('stapleCapacity', 1);
+        let a1Pack = getVal('a1Pack', 1);
+        let coverPack = getVal('coverPack', 1);
+
+        // 2. Initialize Accumulators
+        let totalInsideA2 = 0;
+        let totalCoverA3 = 0;
+        let totalGlue = 0;
+        let totalLaminate = 0;
+        let totalStaple = 0;
+        let totalCTP = 0;
+        
+        let hasError = false;
+        bookDetailTable.innerHTML = ''; // Clear table
+
+        // 3. Process Each Book Row
+        const rows = bookContainer.querySelectorAll('.book-row');
+        rows.forEach((row, index) => {
+            row.classList.remove("error-row");
+
+            let titleInput = row.querySelector(".title").value;
+            let title = titleInput ? titleInput : ("Book " + (index + 1));
+            let pagesInput = row.querySelector(".pages");
+            let pages = parseInt(pagesInput.value) || 0;
+            let qty = parseInt(row.querySelector(".qty").value) || 0;
+            let binding = row.querySelector(".binding").value;
+
+            if (pages === 0 || qty === 0) return; // Skip empty rows
+
+            // Validation logic
+            if (binding === "Perfect" && pages % 8 !== 0) {
+                alert(`Error on [${title}]: Pages for Perfect Binding must be a multiple of 8.`);
+                row.classList.add("error-row");
+                hasError = true;
+                return; 
+            }
+
+            if (binding === "Staple" && pages % 4 !== 0) {
+                // Auto-fix staple pages to multiple of 4
+                pages = Math.ceil(pages / 4) * 4;
+                pagesInput.value = pages; // Update UI
+            }
+
+            // Calculation Per Book
+            let insideA2 = 0;
+            let forms = 0;
+            let plateCount = 0;
+
+            if (binding === "Perfect") {
+                insideA2 = Math.ceil((pages * qty) / 8);
+                insideA2 = Math.ceil(insideA2 * (1 + waste));
+                totalInsideA2 += insideA2;
+                totalCoverA3 += qty;
+
+                forms = Math.ceil(pages / 8);
+                plateCount = forms * 8;
+                totalCTP += plateCount;
+
+                totalGlue += Math.ceil(qty / glueCap);
+                totalLaminate += Math.ceil(qty / laminateCap);
+
+            } else if (binding === "Staple") {
+                let totalPages = pages + 4; 
+                insideA2 = Math.ceil((totalPages * qty) / 8);
+                insideA2 = Math.ceil(insideA2 * (1 + waste));
+                totalInsideA2 += insideA2;
+
+                forms = Math.ceil(totalPages / 8);
+                plateCount = forms * 8;
+                totalCTP += plateCount;
+
+                totalStaple += Math.ceil(qty / stapleCap);
+                totalLaminate += Math.ceil(qty / laminateCap);
+            }
+
+            // Append to Details Table
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td><strong>${title}</strong></td>
+                <td>${pages}</td>
+                <td>${qty.toLocaleString()}</td>
+                <td>${plateCount}</td>
+                <td>${insideA2.toLocaleString()}</td>
+            `;
+            bookDetailTable.appendChild(tr);
+        });
+
+        if(hasError) return; // Stop if math error
+
+        if(bookDetailTable.children.length === 0) {
+            bookDetailTable.innerHTML = '<tr><td colspan="6" class="text-muted">Please enter Book data above.</td></tr>';
+            document.getElementById('printTicket').style.display = 'none';
+            return;
+        }
+
+        // 4. Calculate Final Material Packs
+        let insideA1 = Math.ceil(totalInsideA2 / 2);
+        let insidePack = Math.ceil(insideA1 / a1Pack);
+
+        let coverA2 = Math.ceil(totalCoverA3 / 2);
+        let coverA1 = Math.ceil(coverA2 / 2);
+        let coverPackNeed = Math.ceil(coverA1 / coverPack);
+
+        // 5. Calculate Print Consumables
+        let ink = Math.ceil(totalInsideA2 / inkCap);
+        let alu = Math.ceil(totalInsideA2 / aluCap);
+        let powder = Math.ceil(totalInsideA2 / powderCap);
+        let blanket = Math.ceil(totalInsideA2 / blanketLife);
+        
+        // 6. Calculate Time
+        let days = Math.ceil(totalInsideA2 / dailyCap);
+
+        // 7. Update UI Strings safely
+        document.getElementById("insideSheets").textContent = totalInsideA2.toLocaleString();
+        document.getElementById("insidePack").textContent = insidePack.toLocaleString();
+        document.getElementById("coverPackNeed").textContent = coverPackNeed.toLocaleString();
+        document.getElementById("ctpResult").textContent = totalCTP.toLocaleString();
+        
+        document.getElementById("productionDays").textContent = days + " Days Scheduled";
+
+        document.getElementById("inkResult").textContent = ink.toLocaleString();
+        document.getElementById("aluResult").textContent = alu.toLocaleString();
+        document.getElementById("powderResult").textContent = powder.toLocaleString();
+        document.getElementById("blanketResult").textContent = blanket.toLocaleString();
+        
+        document.getElementById("glueResult").textContent = totalGlue.toLocaleString();
+        document.getElementById("laminateResult").textContent = totalLaminate.toLocaleString();
+        document.getElementById("stapleResult").textContent = totalStaple.toLocaleString();
+
+        // Show Print Button after successful calculation
+        document.getElementById('printTicket').style.display = 'inline-block';
+    });
+});
+</script>
+
+</body>
+</html>
