@@ -69,7 +69,7 @@
         <div id="bookContainer">
             <div class="book-row row align-items-center">
                 <div class="col-md-3 mb-2">
-                    <input class="form-control title" placeholder="Book Title (e.g. Math Grade 1)">
+                    <input class="form-control title" placeholder="Book Title ">
                 </div>
                 <div class="col-md-2 mb-2">
                     <input class="form-control pages" type="number" placeholder="Pages" min="4">
@@ -80,7 +80,7 @@
                 <div class="col-md-2 mb-2">
                     <select class="form-select material">
                         <option value="WF">WF (Woodfree)</option>
-                        <option value="MT">MT (Art Paper)</option>
+                        <option value="MT">MT (Matte)</option>
                         <option value="GL">GL (Glossy)</option>
                     </select>
                 </div>
@@ -151,7 +151,7 @@
                     </div>
                     <div class="col-md-4">
                         <label>Laminate (Books)</label>
-                        <input id="laminateCapacity" class="form-control" type="number" min="1" value="10000">
+                        <input id="laminateCapacity" class="form-control" type="number" min="1" value="4000">
                     </div>
                     <div class="col-md-4">
                         <label>Staples (Books)</label>
@@ -163,7 +163,7 @@
     </div>
 
     <div class="text-center mb-4 no-print d-flex justify-content-center gap-3">
-        <button id="calculate" class="btn btn-primary btn-lg px-5 shadow">📊 Calculate Master Production Run</button>
+        <button id="calculate" class="btn btn-primary btn-lg px-5 shadow">📊 Calculate Master</button>
         <button id="printTicket" class="btn btn-secondary btn-lg px-4 shadow" style="display:none;"><i class="fa fa-print"></i> Print Job Ticket</button>
     </div>
 
