@@ -1,0 +1,6 @@
+{
+  "name": "printing-production-suite",
+  "version": "2.0.0",
+  "description": "Printing production calculator for offset printing house",
+  "private": true
+}

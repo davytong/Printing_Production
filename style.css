@@ -1,0 +1,279 @@
+/* ====================================================
+   PRINTING PRODUCTION SUITE
+   Clean, professional, colorful but not playful
+   ==================================================== */
+
+/* ===== Base ===== */
+body {
+  background: #f5f6fa;
+  font-family: 'Poppins', sans-serif;
+  padding-bottom: 20px;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  padding: 0.4rem 0.6rem;
+  background: #2c3e50 !important;
+}
+
+.navbar-brand {
+  font-size: 1rem;
+  color: #fff !important;
+}
+
+.nav-link {
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.8rem !important;
+  border-radius: 6px;
+  transition: background 0.2s;
+  color: rgba(255,255,255,0.8) !important;
+}
+
+.nav-link:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff !important;
+}
+
+.nav-link.active {
+  background: #3498db !important;
+  color: #fff !important;
+}
+
+/* ===== Cards ===== */
+.card {
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.card-header {
+  background: #34495e;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.8rem;
+}
+
+.big {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* ===== Progress ===== */
+.progress {
+  height: 20px;
+  border-radius: 10px;
+  background: #ecf0f1;
+}
+
+.progress-bar {
+  transition: width 0.5s ease;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 20px;
+  background: #27ae60;
+}
+
+/* ===== Buttons ===== */
+.icon-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+@media (pointer: coarse) {
+  .btn-sm { min-height: 38px; padding: 0.4rem 0.75rem; }
+  .form-control-sm, .form-select-sm { min-height: 38px; font-size: 0.9rem; }
+  .icon-btn { min-width: 38px; min-height: 38px; }
+}
+
+/* ===== Tables ===== */
+table th {
+  font-weight: 700;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+table td {
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
+
+.table-primary th { background: transparent; color: #2980b9 !important; border-color: #2980b9 !important; }
+.table-primary { --bs-table-bg: transparent; }
+.table-warning th { background: transparent; color: #d68910 !important; border-color: #d68910 !important; }
+.table-warning { --bs-table-bg: transparent; }
+.table-light th { background: transparent; color: #2c3e50; }
+.table-light { --bs-table-bg: transparent; }
+.table-info { background: transparent !important; color: #2980b9 !important; font-weight: 700; }
+.table-success th { background: transparent; color: #27ae60 !important; border-color: #27ae60 !important; }
+.table-success { --bs-table-bg: transparent; }
+.table-dark { --bs-table-bg: transparent; background: transparent !important; color: #2c3e50 !important; }
+.table-dark td { color: #2c3e50 !important; font-weight: 700; }
+
+/* ===== Labels ===== */
+.tiny-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+  display: block;
+}
+
+/* ===== Cost Calculator book cards ===== */
+.book-card {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+.book-card:hover {
+  border-color: #3498db;
+}
+
+.book-card.expensive {
+  border: 2px solid #e67e22;
+  background: #fef9e7;
+}
+
+/* ===== Production Calculator rows ===== */
+.book-row {
+  background: #fafbfc;
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  transition: 0.2s;
+}
+
+.book-row:hover {
+  border-color: #2980b9;
+}
+
+.book-row.error-row {
+  border-color: #e74c3c;
+  background: #fdedec;
+}
+
+/* ===== Summary Boxes ===== */
+.summary-box {
+  padding: 14px 10px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.summary-box h4, .summary-box h5 {
+  font-size: 1.1rem;
+}
+
+.summary-box.bg-primary { background: #2980b9 !important; }
+.summary-box.bg-success { background: #27ae60 !important; }
+.summary-box.bg-warning { background: #f39c12 !important; color: #fff !important; }
+.summary-box.bg-danger { background: #c0392b !important; }
+
+/* ===== Dashboard cards ===== */
+#cards .card-header {
+  background: #2c3e50;
+}
+
+/* ===== Badge ===== */
+.badge.bg-secondary {
+  background: #7f8c8d !important;
+  font-size: 0.75rem;
+}
+
+/* ===== History Panel ===== */
+.history-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: 250px;
+  background: #fff;
+  border-top: 3px solid #3498db;
+  padding: 12px 16px;
+  overflow-y: auto;
+  z-index: 1050;
+  box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+  border-radius: 10px 10px 0 0;
+}
+
+.history-card {
+  background: #eaf2f8;
+  font-size: 0.78rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.history-card:hover {
+  background: #d4e6f1;
+}
+
+/* ===== Summary Cards in Cost Tab ===== */
+#summaryCards .bg-primary { background: #2980b9 !important; }
+#summaryCards .bg-info { background: #2471a3 !important; }
+#summaryCards .bg-danger { background: #c0392b !important; }
+#summaryCards .bg-warning { background: #d68910 !important; }
+#summaryCards .bg-success { background: #1e8449 !important; }
+#summaryCards .bg-secondary { background: #5d6d7e !important; }
+#summaryCards .bg-dark { background: #2c3e50 !important; }
+
+/* ===== Responsive ===== */
+@media (max-width: 575.98px) {
+  .navbar-brand { font-size: 0.9rem; }
+  .big { font-size: 1rem; }
+  .summary-box { padding: 10px 6px; }
+  .summary-box h4, .summary-box h5 { font-size: 0.85rem; }
+  .card-body { padding: 0.5rem; }
+  h5 { font-size: 1rem; }
+  h6 { font-size: 0.85rem; }
+  .history-panel { max-height: 200px; padding: 10px 12px; }
+}
+
+@media (min-width: 992px) {
+  .container-fluid { max-width: 1400px; margin: 0 auto; }
+  table th, table td { font-size: 0.85rem; }
+}
+
+/* ===== Print ===== */
+@media print {
+  .no-print, .navbar, .history-panel, .modal, #tab-cost, button {
+    display: none !important;
+  }
+  body { background: white; margin: 5mm; padding: 0; }
+  .card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+  .summary-box { color: #000 !important; background: white !important; border: 2px solid #000; box-shadow: none; }
+  .tab-pane { display: block !important; opacity: 1 !important; }
+  #tab-production { display: block !important; opacity: 1 !important; }
+  .no-print-inside { display: none !important; }
+}
+
+.table-responsive { -webkit-overflow-scrolling: touch; overflow-x: auto; overflow-y: visible; max-height: none !important; }
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  body { padding-bottom: env(safe-area-inset-bottom); }
+  .history-panel { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+}
