@@ -393,6 +393,7 @@ function executeProductionImport(data) {
   });
 
   Swal.fire("Success", `${data.length} book(s) loaded into Production Calculator`, "success");
+  runProductionCalc();
 }
 
 function createProdRow() {
@@ -755,7 +756,7 @@ function calcFinishDate(workDays) {
 }
 
 // --- Production Calculate ---
-$("#prodCalculate").on("click", function () {
+function runProductionCalc() {
   const waste = getVal("prodWaste", 0) / 100;
   const formsPerDay = getVal("prodFormsPerDay", 10); // forms (children) that can be printed per day (both sides)
   const dailyCap = getVal("prodDailyCap", 50000);    // sheets/day for material calculation
@@ -993,6 +994,18 @@ $("#prodCalculate").on("click", function () {
 
   $("#prodPrint").show();
   $("#prodExportExcel").show();
+}
+
+// --- Button click + auto-calculate on input change ---
+$("#prodCalculate").on("click", runProductionCalc);
+
+// Auto-calculate when any production input changes
+$(document).on("input change", "#bookContainer input, #bookContainer select, #prodSettings input, #prodFormsPerDay, #prodDailyCap, #prodWaste, #prodBlanketLife, #prodA1Pack, #prodCoverPack, #prodInkCap, #prodAluCap, #prodPowderCap, #prodGlueCap, #prodLamCap, #prodStapleCap, #prodExtraDays, #prodStartDate", function () {
+  clearTimeout(window._prodCalcTimer);
+  window._prodCalcTimer = setTimeout(function () {
+    const hasData = $("#bookContainer .prod-pages").toArray().some((el) => el.value > 0);
+    if (hasData) runProductionCalc();
+  }, 300);
 });
 
 // ====================================================
