@@ -1,4 +1,4 @@
-﻿// ====================================================
+// ====================================================
 // PRINTING PRODUCTION SUITE - v2.0
 // Multi-device responsive, multi-format import
 // ====================================================
@@ -758,8 +758,8 @@ function calcFinishDate(workDays) {
 // --- Production Calculate ---
 function runProductionCalc() {
   const waste = getVal("prodWaste", 0) / 100;
-  const formsPerDay = getVal("prodFormsPerDay", 10); // forms (children) that can be printed per day (both sides)
-  const dailyCap = getVal("prodDailyCap", 50000);    // sheets/day for material calculation
+  const formsPerDay = getVal("prodFormsPerDay", 10); // forms that can be printed per day (both sides)
+  const dailyCap = getVal("prodDailyCap", 50000);    // sheets/day for press capacity
   const inkCap = getVal("prodInkCap", 33000);
   const aluCap = getVal("prodAluCap", 15000);
   const powderCap = getVal("prodPowderCap", 22000);
@@ -767,7 +767,9 @@ function runProductionCalc() {
   const glueCap = getVal("prodGlueCap", 10000);
   const laminateCap = getVal("prodLamCap", 4000);
   const stapleCap = getVal("prodStapleCap", 10000);
-  const a1Pack = getVal("prodA1Pack", 500);
+  const wfPackCap = getVal("prodWfPack", 500);
+  const mtPackCap = getVal("prodMtPack", 250);
+  const glPackCap = getVal("prodGlPack", 100);
   const coverPack = getVal("prodCoverPack", 100);
 
   let totalInsideA2 = 0, totalCoverA3 = 0;
@@ -775,6 +777,7 @@ function runProductionCalc() {
   let totalCTP = 0;
   let totalForms = 0, totalImpressions = 0, totalDaysAll = 0;
   let totalQty = 0;
+  let materialSheets = { WF: 0, MT: 0, GL: 0 };
   let hasError = false;
   const errorMessages = [];
   const notices = [];
@@ -793,6 +796,7 @@ function runProductionCalc() {
     const pagesInput = row.querySelector(".prod-pages");
     let pages = parseInt(pagesInput.value) || 0;
     const qty = parseInt(row.querySelector(".prod-qty").value) || 0;
+    const material = (row.querySelector(".prod-material") ? row.querySelector(".prod-material").value : "WF") || "WF";
     const binding = row.querySelector(".prod-binding").value;
 
     if (pages === 0 && qty === 0) return; // Skip empty rows
@@ -826,44 +830,37 @@ function runProductionCalc() {
     }
 
     // ===== OFFSET PRINTING CALCULATION =====
-    // 1 form (child) = 8 pages (printed on ONE side of A2)
-    // 1 A2 sheet = 2 forms (front + back) = 16 pages total
-    // forms = pages ÷ 8 (number of different plate sets)
-    // Physical A2 sheets per book = forms ÷ 2 (2 forms per sheet, front & back)
-    // Total A2 sheets = (forms ÷ 2) × qty
-    // Paper: we buy A1, cut to A2. 1 A1 = 2 A2.
+    // 1 Form = 8 pages (BOTH sides)
+    // 1 A2 sheet = 2 forms = 16 pages
+    // Forms = Math.ceil(pages / 8)
+    // Formula to Calculate Paper Inside: (forms(A2)/2)*QTY OR ((PAGE/16)*QTY)
+    // With waste: insideA2 = Math.ceil(((forms / 2) * qty) * (1 + waste))
 
-    let forms = 0;
-    let insideA2 = 0;
-    let plateCount = 0;
+    const forms = Math.ceil(pages / 8);
+    const netInsideA2 = (forms / 2) * qty;
+    const insideA2 = Math.ceil(netInsideA2 * (1 + waste));
+
+    // CTP Plates: 4 plates per form for inside (CMYK) + 4 plates for cover (CMYK)
+    const insidePlates = forms * 4;
+    const coverPlates = 4;
+    const plateCount = insidePlates + coverPlates;
+
+    totalInsideA2 += insideA2;
+    materialSheets[material] = (materialSheets[material] || 0) + insideA2;
+    totalCTP += plateCount;
 
     if (binding === "Perfect") {
-      forms = Math.ceil(pages / 8);
-      const sheetsPerBook = Math.ceil(forms / 2);
-      insideA2 = sheetsPerBook * qty;
-      insideA2 = Math.ceil(insideA2 * (1 + waste));
-      totalInsideA2 += insideA2;
-      plateCount = forms * 8;
-      totalCTP += plateCount;
       totalPerfectQty += qty;
     } else {
-      const totalPages = pages + 4;
-      forms = Math.ceil(totalPages / 8);
-      const sheetsPerBook = Math.ceil(forms / 2);
-      insideA2 = sheetsPerBook * qty;
-      insideA2 = Math.ceil(insideA2 * (1 + waste));
-      totalInsideA2 += insideA2;
-      plateCount = forms * 8;
-      totalCTP += plateCount;
       totalStapleQty += qty;
     }
 
-    // Every book needs 1 cover (A3) regardless of binding
+    // Every book needs 1 cover (A3)
     totalCoverA3 += qty;
 
-    // Days calculation for this book (if printed alone, for reference only)
+    // Impressions & Days calculation
     const impressions = forms * qty;
-    const daysForBook = Math.ceil(forms / formsPerDay);
+    const daysForBook = Math.max(Math.ceil(forms / formsPerDay), Math.ceil(insideA2 / dailyCap));
 
     totalForms += forms;
     totalImpressions += impressions;
@@ -873,9 +870,11 @@ function runProductionCalc() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${processedCount}</td>
-      <td class="text-start text-truncate" style="max-width:200px"><strong>${title}</strong></td>
+      <td class="text-start text-truncate" style="max-width:180px"><strong>${title}</strong></td>
       <td>${pages.toLocaleString("en-US")}</td>
       <td style="color:#2980b9; font-weight:600;">${qty.toLocaleString("en-US")}</td>
+      <td><span class="badge bg-secondary">${material}</span></td>
+      <td><span class="badge ${binding === "Perfect" ? "bg-primary" : "bg-info"}">${binding}</span></td>
       <td style="color:#8e44ad;">${forms.toLocaleString("en-US")}</td>
       <td style="color:#d35400;">${impressions.toLocaleString("en-US")}</td>
       <td style="color:#27ae60; font-weight:600;">${insideA2.toLocaleString("en-US")}</td>
@@ -901,15 +900,14 @@ function runProductionCalc() {
   }
 
   if (processedCount === 0) {
-    detailTable.innerHTML = '<tr><td colspan="9" class="text-muted">Please enter book data above</td></tr>';
+    detailTable.innerHTML = '<tr><td colspan="11" class="text-muted">Please enter book data above</td></tr>';
     $("#prodPrint").hide();
     $("#prodDetailFoot").hide();
     return;
   }
 
   // Show footer totals
-  // Total days = total forms ÷ formsPerDay (continuous production, no wasted capacity between books)
-  totalDaysAll = Math.ceil(totalForms / formsPerDay);
+  totalDaysAll = Math.max(Math.ceil(totalForms / formsPerDay), Math.ceil(totalInsideA2 / dailyCap));
   
   // Add extra days (buffer/maintenance/other)
   const extraDays = parseInt(document.getElementById("prodExtraDays").value) || 0;
@@ -927,14 +925,19 @@ function runProductionCalc() {
   $("#prodTotalDaysCol").text(totalDaysAll.toLocaleString("en-US"));
 
   // Final material calculations
-  // Inside paper: A2 → A1 (1 A1 = 2 A2), pack = a1Pack sheets
-  const insideA1 = Math.ceil(totalInsideA2 / 2);
-  const insidePack = Math.ceil(insideA1 / a1Pack);
+  // Inside paper packs per material:
+  // WF: wfSheets / prodWfPack (default 500)
+  // MT: mtSheets / prodMtPack (default 250)
+  // GL: glSheets / prodGlPack (default 100)
+  const wfPacks = Math.ceil((materialSheets["WF"] || 0) / wfPackCap);
+  const mtPacks = Math.ceil((materialSheets["MT"] || 0) / mtPackCap);
+  const glPacks = Math.ceil((materialSheets["GL"] || 0) / glPackCap);
+  const insidePack = wfPacks + mtPacks + glPacks;
   
-  // Cover paper: each book = 1 cover (A3 size)
+  // Cover paper: each book = 1 cover (A3 size) with waste
   // 1 A1 = 4 A3 (A1 → 2 A2 → 4 A3)
-  // So: total A3 covers ÷ 4 = A1 sheets needed
-  const coverA1 = Math.ceil(totalCoverA3 / 4);
+  const coverA3WithWaste = Math.ceil(totalCoverA3 * (1 + waste));
+  const coverA1 = Math.ceil(coverA3WithWaste / 4);
   const coverPackNeed = Math.ceil(coverA1 / coverPack);
 
   const ink = Math.ceil(totalInsideA2 / inkCap);
@@ -948,13 +951,21 @@ function runProductionCalc() {
   // Update UI
   $("#prodTotalBooks").text(processedCount.toLocaleString("en-US"));
   $("#prodTotalQty").text(totalQty.toLocaleString("en-US"));
+  $("#prodTotalFormsSummary").text(totalForms.toLocaleString("en-US"));
   $("#prodInsideSheets").text(totalInsideA2.toLocaleString("en-US"));
   $("#prodInsidePack").text(insidePack.toLocaleString("en-US"));
   $("#prodCoverPackNeed").text(coverPackNeed.toLocaleString("en-US"));
   $("#prodCtpResult").text(totalCTP.toLocaleString("en-US"));
+  $("#prodSpeedBadge").html(`<i class="fa-solid fa-gauge-high"></i> ${formsPerDay.toLocaleString("en-US")} Child/Day`);
   $("#prodDays").text(totalDaysAll.toLocaleString("en-US") + " Work Days");
   const startDate = document.getElementById("prodStartDate").value || new Date().toISOString().split("T")[0];
   $("#prodFinishDate").text(startDate + " → " + schedule.finishDate);
+
+  // Material breakdown badges
+  $("#prodWfPackBadge").html(`<i class="fa-solid fa-layer-group"></i> WF: ${(materialSheets["WF"] || 0).toLocaleString("en-US")} sh (${wfPacks.toLocaleString("en-US")} pk @${wfPackCap})`);
+  $("#prodMtPackBadge").html(`<i class="fa-solid fa-layer-group"></i> MT: ${(materialSheets["MT"] || 0).toLocaleString("en-US")} sh (${mtPacks.toLocaleString("en-US")} pk @${mtPackCap})`);
+  $("#prodGlPackBadge").html(`<i class="fa-solid fa-layer-group"></i> GL: ${(materialSheets["GL"] || 0).toLocaleString("en-US")} sh (${glPacks.toLocaleString("en-US")} pk @${glPackCap})`);
+  $("#prodCoverBadge").html(`<i class="fa-solid fa-box"></i> Cover: ${coverA3WithWaste.toLocaleString("en-US")} A3 (${coverPackNeed.toLocaleString("en-US")} pk @${coverPack})`);
 
   $("#prodInk").text(ink.toLocaleString("en-US"));
   $("#prodAlu").text(alu.toLocaleString("en-US"));
@@ -971,23 +982,28 @@ function runProductionCalc() {
     totalForms, totalImpressions, totalInsideA2, totalCTP, totalDaysAll,
     insidePack, coverPackNeed, ink, alu, powder, blanket,
     totalGlue, totalLaminate, totalStaple,
+    materialSheets, wfPacks, mtPacks, glPacks,
+    wfPackCap, mtPackCap, glPackCap, coverPack,
+    formsPerDay,
     finishDate: schedule.finishDate, calendarDays: schedule.calendarDays,
     holidays: prodHolidays.length
   };
   // Collect book details from table
   detailTable.querySelectorAll("tr").forEach((tr) => {
     const cells = tr.querySelectorAll("td");
-    if (cells.length >= 9) {
+    if (cells.length >= 11) {
       window._prodData.books.push({
         num: cells[0].textContent,
         title: cells[1].textContent,
         pages: cells[2].textContent,
         qty: cells[3].textContent,
-        forms: cells[4].textContent,
-        impressions: cells[5].textContent,
-        a2: cells[6].textContent,
-        plates: cells[7].textContent,
-        days: cells[8].textContent
+        material: cells[4].textContent,
+        binding: cells[5].textContent,
+        forms: cells[6].textContent,
+        impressions: cells[7].textContent,
+        a2: cells[8].textContent,
+        plates: cells[9].textContent,
+        days: cells[10].textContent
       });
     }
   });
@@ -996,11 +1012,21 @@ function runProductionCalc() {
   $("#prodExportExcel").show();
 }
 
+// Function to update speed badge dynamically in real time
+function updateSpeedBadge() {
+  const speed = getVal("prodFormsPerDay", 10);
+  $("#prodSpeedBadge").html(`<i class="fa-solid fa-gauge-high"></i> ${speed.toLocaleString("en-US")} Child/Day`);
+}
+
+// Initial speed badge setup
+updateSpeedBadge();
+
 // --- Button click + auto-calculate on input change ---
 $("#prodCalculate").on("click", runProductionCalc);
 
-// Auto-calculate when any production input changes
-$(document).on("input change", "#bookContainer input, #bookContainer select, #prodSettings input, #prodFormsPerDay, #prodDailyCap, #prodWaste, #prodBlanketLife, #prodA1Pack, #prodCoverPack, #prodInkCap, #prodAluCap, #prodPowderCap, #prodGlueCap, #prodLamCap, #prodStapleCap, #prodExtraDays, #prodStartDate", function () {
+// Auto-calculate & update speed badge dynamically whenever any input changes
+$(document).on("input change keyup", "#bookContainer input, #bookContainer select, #prodSettings input, #prodFormsPerDay, #prodDailyCap, #prodWaste, #prodBlanketLife, #prodWfPack, #prodMtPack, #prodGlPack, #prodCoverPack, #prodInkCap, #prodAluCap, #prodPowderCap, #prodGlueCap, #prodLamCap, #prodStapleCap, #prodExtraDays, #prodStartDate", function () {
+  updateSpeedBadge();
   clearTimeout(window._prodCalcTimer);
   window._prodCalcTimer = setTimeout(function () {
     const hasData = $("#bookContainer .prod-pages").toArray().some((el) => el.value > 0);
@@ -1027,8 +1053,13 @@ $("#prodExportExcel").on("click", function () {
   data.push(["SUMMARY"]);
   data.push(["Total Books", d.totalBooks]);
   data.push(["Total Qty", d.totalQty]);
-  data.push(["A2 Sheets", d.totalInsideA2]);
-  data.push(["Inside Packs", d.insidePack]);
+  data.push(["Total Children", d.totalForms]);
+  data.push(["Producing Speed", `${d.formsPerDay || 10} Child/Day`]);
+  data.push(["A2 Sheets (Total)", d.totalInsideA2]);
+  data.push(["Inside Packs (Total)", d.insidePack]);
+  data.push(["WF Sheets / Packs", `${d.materialSheets.WF || 0} sheets / ${d.wfPacks || 0} packs (@${d.wfPackCap} sh/pk)`]);
+  data.push(["MT Sheets / Packs", `${d.materialSheets.MT || 0} sheets / ${d.mtPacks || 0} packs (@${d.mtPackCap} sh/pk)`]);
+  data.push(["GL Sheets / Packs", `${d.materialSheets.GL || 0} sheets / ${d.glPacks || 0} packs (@${d.glPackCap} sh/pk)`]);
   data.push(["Cover Packs", d.coverPackNeed]);
   data.push(["CTP Plates", d.totalCTP]);
   data.push(["Total Days (Work)", d.totalDaysAll]);
@@ -1038,11 +1069,11 @@ $("#prodExportExcel").on("click", function () {
 
   // Job Breakdown
   data.push(["JOB BREAKDOWN"]);
-  data.push(["#", "Title", "Pages", "Qty", "Forms", "Impressions", "A2 Sheets", "Plates", "Days"]);
+  data.push(["#", "Title", "Pages", "Qty", "Material", "Binding", "Child", "Impressions", "A2 Sheets", "Plates", "Days"]);
   d.books.forEach((b) => {
-    data.push([b.num, b.title, b.pages, b.qty, b.forms, b.impressions, b.a2, b.plates, b.days]);
+    data.push([b.num, b.title, b.pages, b.qty, b.material, b.binding, b.forms, b.impressions, b.a2, b.plates, b.days]);
   });
-  data.push(["", "TOTAL", "", d.totalQty, d.totalForms, d.totalImpressions, d.totalInsideA2, d.totalCTP, d.totalDaysAll]);
+  data.push(["", "TOTAL", "", d.totalQty, "", "", d.totalForms, d.totalImpressions, d.totalInsideA2, d.totalCTP, d.totalDaysAll]);
   data.push([]);
 
   // Consumables
@@ -1052,7 +1083,7 @@ $("#prodExportExcel").on("click", function () {
 
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws["!cols"] = [
-    { wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 10 },
+    { wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 10 },
     { wch: 8 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 6 }
   ];
   const wb = XLSX.utils.book_new();
@@ -1061,18 +1092,64 @@ $("#prodExportExcel").on("click", function () {
 });
 
 // ====================================================
-// PRODUCTION: CUSTOM PRINT
+// PRODUCTION: CUSTOM PRINT & SELECTION
 // ====================================================
 $("#prodPrint").on("click", function () {
   const d = window._prodData;
-  if (!d || !d.books.length) return;
+  if (!d || !d.books || !d.books.length) {
+    if (typeof Swal !== "undefined") {
+      Swal.fire({ icon: "warning", title: "No Data", text: "Please calculate production before printing." });
+    } else {
+      alert("Please calculate production before printing.");
+    }
+    return;
+  }
+
+  // Populate book checkboxes
+  let bookHtml = "";
+  d.books.forEach((b, i) => {
+    bookHtml += `
+      <div class="form-check form-check-inline mb-1">
+        <input class="form-check-input print-book-opt" type="checkbox" id="printBook_${i}" value="${i}" checked>
+        <label class="form-check-label small" for="printBook_${i}">${b.num}. ${b.title || "Book " + b.num} <span class="badge bg-light text-dark border ms-1">${b.forms} Child</span></label>
+      </div>`;
+  });
+  $("#printBookCheckboxes").html(bookHtml);
 
   buildPrintPreview();
-  new bootstrap.Modal("#printPreviewModal").show();
+  const modalEl = document.getElementById("printPreviewModal");
+  if (modalEl) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
 });
 
-// Rebuild preview when checkboxes change
-$(document).on("change", ".print-opt", function () {
+// Rebuild preview when section checkboxes change
+$(document).on("change", ".print-opt, .print-book-opt", function () {
+  buildPrintPreview();
+});
+
+// Select / Deselect all sections
+$(document).on("click", "#selectAllPrintOpts", function () {
+  $(".print-opt").prop("checked", true);
+  buildPrintPreview();
+});
+
+$(document).on("click", "#clearAllPrintOpts", function () {
+  $(".print-opt").prop("checked", false);
+  buildPrintPreview();
+});
+
+// Select / Deselect all books
+$(document).on("click", "#selectAllPrintBooks", function (e) {
+  e.preventDefault();
+  $(".print-book-opt").prop("checked", true);
+  buildPrintPreview();
+});
+
+$(document).on("click", "#clearAllPrintBooks", function (e) {
+  e.preventDefault();
+  $(".print-book-opt").prop("checked", false);
   buildPrintPreview();
 });
 
@@ -1080,79 +1157,404 @@ function buildPrintPreview() {
   const d = window._prodData;
   if (!d) return;
 
-  const showHeader = $(".print-opt[value='header']").is(":checked");
-  const showSummary = $(".print-opt[value='summary']").is(":checked");
-  const showBreakdown = $(".print-opt[value='breakdown']").is(":checked");
-  const showConsumables = $(".print-opt[value='consumables']").is(":checked");
+  const showHeader = $("#optHeader").is(":checked");
+  const showSummary = $("#optSummary").is(":checked");
+  const showMaterials = $("#optMaterials").is(":checked");
+  const showBreakdown = $("#optBreakdown").is(":checked");
+  const showConsumables = $("#optConsumables").is(":checked");
+  const showSignatures = $("#optSignatures").is(":checked");
+
+  // Selected books
+  const selectedBookIndices = [];
+  $(".print-book-opt:checked").each(function () {
+    selectedBookIndices.push(parseInt($(this).val(), 10));
+  });
+
+  const allBooksCount = d.books.length;
+  const isSubset = selectedBookIndices.length > 0 && selectedBookIndices.length < allBooksCount;
+  const booksToDisplay = d.books.filter((_, idx) => selectedBookIndices.includes(idx));
+
+  // Compute stats for displayed books if subset, otherwise full project
+  let dispBooks = booksToDisplay.length;
+  let dispQty = 0;
+  let dispForms = 0;
+  let dispA2 = 0;
+  let dispImpressions = 0;
+  let dispPlates = 0;
+  let dispDays = 0;
+
+  if (isSubset) {
+    booksToDisplay.forEach(b => {
+      dispQty += b.rawQty || 0;
+      dispForms += b.forms || 0;
+      dispA2 += b.a2Raw || 0;
+      dispImpressions += b.impressionsRaw || 0;
+      dispPlates += b.platesRaw || 0;
+      dispDays += b.days || 0;
+    });
+  } else {
+    dispBooks = d.totalBooks;
+    dispQty = d.totalQty;
+    dispForms = d.totalForms;
+    dispA2 = d.totalInsideA2;
+    dispImpressions = d.totalImpressions;
+    dispPlates = d.totalCTP;
+    dispDays = d.totalDaysAll;
+  }
 
   let html = "";
 
+  // 1. Header
   if (showHeader) {
-    html += `<div class="text-center mb-3">
-      <h5 class="fw-bold">Production Job Ticket</h5>
-      <small class="text-muted">${new Date().toLocaleString("en-US")} | ${d.totalDaysAll} Work Days (excl. Sundays${d.holidays > 0 ? " + " + d.holidays + " holidays" : ""}) | Finish: ${d.finishDate}</small>
-    </div>`;
+    html += `
+      <div class="print-header text-center mb-3 pb-2 border-bottom">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="text-start">
+            <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-industry text-primary"></i> Production Job Ticket</h5>
+            <div class="d-flex gap-1 mt-1">
+              <span class="badge bg-dark">${dispBooks} Job${dispBooks > 1 ? "s" : ""}</span>
+              <span class="badge bg-primary">${dispQty.toLocaleString("en-US")} Total Qty</span>
+              <span class="badge bg-purple" style="background:#8e44ad; color:#fff;">${dispForms.toLocaleString("en-US")} Children</span>
+            </div>
+          </div>
+          <div class="text-end small text-muted">
+            <div><b>Date:</b> ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</div>
+            <div><b>Target Finish:</b> <span class="badge bg-success">${d.finishDate}</span></div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center gap-3 small text-muted flex-wrap mt-1">
+          <span><i class="fa-solid fa-gauge-high text-primary"></i> <b>Speed:</b> ${d.formsPerDay || 10} Child/Day</span>
+          <span><i class="fa-solid fa-calendar-day text-secondary"></i> <b>Work Days:</b> ${dispDays} Days</span>
+          <span><i class="fa-solid fa-calendar-check text-success"></i> <b>Timeline:</b> ${d.startDate || "N/A"} → ${d.finishDate}</span>
+        </div>
+      </div>`;
   }
 
+  // 2. 7 Summary Cards
   if (showSummary) {
-    html += `<table class="table table-bordered table-sm text-center mb-3">
-      <thead><tr><th>Books</th><th>Total Qty</th><th>A2 Sheets</th><th>Inside Packs</th><th>Cover Packs</th><th>CTP Plates</th><th>Days</th></tr></thead>
-      <tbody><tr>
-        <td><b>${d.totalBooks.toLocaleString("en-US")}</b></td>
-        <td><b>${d.totalQty.toLocaleString("en-US")}</b></td>
-        <td><b>${d.totalInsideA2.toLocaleString("en-US")}</b></td>
-        <td><b>${d.insidePack.toLocaleString("en-US")}</b></td>
-        <td><b>${d.coverPackNeed.toLocaleString("en-US")}</b></td>
-        <td><b>${d.totalCTP.toLocaleString("en-US")}</b></td>
-        <td><b>${d.totalDaysAll.toLocaleString("en-US")}</b></td>
-      </tr></tbody>
-    </table>`;
+    html += `
+      <div class="prod-summary-grid mb-3">
+        <div class="summary-box" style="background:#f0f0f0; border:2px solid #7f8c8d;">
+          <div class="tiny-label" style="font-weight:700; color:#555;">BOOKS</div>
+          <h5 class="mb-0 fw-bold" style="color:#2c3e50;">${dispBooks.toLocaleString("en-US")}</h5>
+        </div>
+        <div class="summary-box" style="background:#eaf6ff; border:2px solid #2980b9;">
+          <div class="tiny-label" style="font-weight:700; color:#2980b9;">TOTAL QTY</div>
+          <h5 class="mb-0 fw-bold" style="color:#2980b9;">${dispQty.toLocaleString("en-US")}</h5>
+        </div>
+        <div class="summary-box" style="background:#f5eef8; border:2px solid #8e44ad;">
+          <div class="tiny-label" style="font-weight:700; color:#8e44ad;">TOTAL CHILDREN</div>
+          <h5 class="mb-0 fw-bold" style="color:#8e44ad;">${dispForms.toLocaleString("en-US")}</h5>
+        </div>
+        <div class="summary-box" style="background:#e8fdf5; border:2px solid #27ae60;">
+          <div class="tiny-label" style="font-weight:700; color:#27ae60;">A2 SHEETS</div>
+          <h5 class="mb-0 fw-bold" style="color:#27ae60;">${dispA2.toLocaleString("en-US")}</h5>
+        </div>
+        <div class="summary-box" style="background:#fef9e7; border:2px solid #f39c12;">
+          <div class="tiny-label" style="font-weight:700; color:#d68910;">INSIDE PACKS</div>
+          <h5 class="mb-0 fw-bold" style="color:#d68910;">${d.insidePack.toLocaleString("en-US")}</h5>
+        </div>
+        <div class="summary-box" style="background:#fdedec; border:2px solid #e74c3c;">
+          <div class="tiny-label" style="font-weight:700; color:#c0392b;">COVER PACKS</div>
+          <h5 class="mb-0 fw-bold" style="color:#c0392b;">${d.coverPackNeed.toLocaleString("en-US")}</h5>
+        </div>
+        <div class="summary-box" style="background:#e8f4f8; border:2px solid #16a085;">
+          <div class="tiny-label" style="font-weight:700; color:#16a085;">CTP PLATES</div>
+          <h5 class="mb-0 fw-bold" style="color:#16a085;">${dispPlates.toLocaleString("en-US")}</h5>
+        </div>
+      </div>`;
   }
 
+  // 3. Paper Pack Badges
+  if (showMaterials) {
+    html += `
+      <div class="material-badges-row mb-3">
+        <span class="badge bg-primary" style="background:#2980b9 !important;"><i class="fa-solid fa-layer-group"></i> WF: ${(d.wfSheets || 0).toLocaleString("en-US")} sh (${(d.wfPacks || 0).toLocaleString("en-US")} pk @${d.wfPackSize || 500})</span>
+        <span class="badge bg-secondary" style="background:#7f8c8d !important;"><i class="fa-solid fa-layer-group"></i> MT: ${(d.mtSheets || 0).toLocaleString("en-US")} sh (${(d.mtPacks || 0).toLocaleString("en-US")} pk @${d.mtPackSize || 250})</span>
+        <span class="badge bg-dark" style="background:#2c3e50 !important;"><i class="fa-solid fa-layer-group"></i> GL: ${(d.glSheets || 0).toLocaleString("en-US")} sh (${(d.glPacks || 0).toLocaleString("en-US")} pk @${d.glPackSize || 100})</span>
+        <span class="badge bg-danger" style="background:#c0392b !important;"><i class="fa-solid fa-box"></i> Cover: ${(d.coverSheetsA3 || 0).toLocaleString("en-US")} A3 (${(d.coverPackNeed || 0).toLocaleString("en-US")} pk @${d.coverPackSize || 100})</span>
+      </div>`;
+  }
+
+  // 4. Job Breakdown Table
   if (showBreakdown) {
-    html += `<table class="table table-bordered table-sm text-center small mb-3">
-      <thead><tr><th>#</th><th>Title</th><th>Pages</th><th>Qty</th><th>Forms</th><th>Impress.</th><th>A2</th><th>Plates</th><th>Days</th></tr></thead>
-      <tbody>`;
-    d.books.forEach((b) => {
-      html += `<tr><td>${b.num}</td><td class="text-start">${b.title}</td><td>${b.pages}</td><td>${b.qty}</td><td>${b.forms}</td><td>${b.impressions}</td><td>${b.a2}</td><td>${b.plates}</td><td><b>${b.days}</b></td></tr>`;
-    });
-    html += `<tr class="fw-bold"><td colspan="3" class="text-end">TOTAL</td><td>${d.totalQty.toLocaleString("en-US")}</td><td>${d.totalForms.toLocaleString("en-US")}</td><td>${d.totalImpressions.toLocaleString("en-US")}</td><td>${d.totalInsideA2.toLocaleString("en-US")}</td><td>${d.totalCTP.toLocaleString("en-US")}</td><td>${d.totalDaysAll.toLocaleString("en-US")}</td></tr>`;
-    html += `</tbody></table>`;
+    html += `
+      <div class="card p-2 mb-3 border">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <h6 class="fw-bold mb-0 small"><i class="fa-solid fa-list-check text-primary"></i> Job Breakdown (1 Child = 8pg BOTH sides)</h6>
+          <div class="d-flex gap-1 align-items-center">
+            <span class="badge bg-primary">${d.formsPerDay || 10} Child/Day</span>
+            <span class="badge bg-secondary">${dispDays} Work Days</span>
+            <span class="badge bg-success">${d.finishDate}</span>
+          </div>
+        </div>
+        <div class="table-responsive" style="overflow:visible;">
+          <table class="table table-bordered table-sm text-center align-middle mb-0 small">
+            <thead>
+              <tr style="background:#f0f7ff; color:#1e3a8a;">
+                <th style="width:30px;">#</th>
+                <th class="text-start">Title</th>
+                <th>Pg</th>
+                <th style="color:#2980b9;">Qty</th>
+                <th>Mat</th>
+                <th>Bind</th>
+                <th style="color:#8e44ad;">Child</th>
+                <th style="color:#d35400;">Impress.</th>
+                <th style="color:#27ae60;">A2 Sheets</th>
+                <th style="color:#c0392b;">Plates</th>
+                <th style="background:#2980b9; color:#fff;">Days</th>
+              </tr>
+            </thead>
+            <tbody>`;
+    if (booksToDisplay.length === 0) {
+      html += `<tr><td colspan="11" class="text-muted py-2">No books selected</td></tr>`;
+    } else {
+      booksToDisplay.forEach(b => {
+        html += `
+          <tr>
+            <td>${b.num}</td>
+            <td class="text-start fw-semibold">${b.title}</td>
+            <td>${b.pages}</td>
+            <td style="color:#2980b9; font-weight:700;">${b.qty}</td>
+            <td><span class="badge bg-light text-dark border">${b.material}</span></td>
+            <td><span class="badge ${b.binding === 'Perfect' ? 'bg-primary' : 'bg-info'}">${b.binding}</span></td>
+            <td style="color:#8e44ad; font-weight:700;">${b.forms}</td>
+            <td style="color:#d35400;">${b.impressions}</td>
+            <td style="color:#27ae60; font-weight:700;">${b.a2}</td>
+            <td style="color:#c0392b;">${b.plates}</td>
+            <td style="background:#eaf2f8; font-weight:700; color:#2980b9;">${b.days}</td>
+          </tr>`;
+      });
+    }
+    html += `
+            </tbody>
+            <tfoot>
+              <tr style="background:#2c3e50; color:#fff; font-weight:700;">
+                <td colspan="2" class="text-end">TOTAL</td>
+                <td>—</td>
+                <td>${dispQty.toLocaleString("en-US")}</td>
+                <td>—</td>
+                <td>—</td>
+                <td>${dispForms.toLocaleString("en-US")}</td>
+                <td>${dispImpressions.toLocaleString("en-US")}</td>
+                <td style="color:#55efc4;">${dispA2.toLocaleString("en-US")}</td>
+                <td>${dispPlates.toLocaleString("en-US")}</td>
+                <td style="background:#2980b9;">${dispDays.toLocaleString("en-US")}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>`;
   }
 
+  // 5. Consumables
   if (showConsumables) {
-    html += `<table class="table table-bordered table-sm text-center mb-3">
-      <thead><tr><th>Ink</th><th>Alu</th><th>Powder</th><th>Blanket</th><th>Glue</th><th>Laminate</th><th>Staples</th></tr></thead>
-      <tbody><tr>
-        <td>${d.ink.toLocaleString("en-US")}</td>
-        <td>${d.alu.toLocaleString("en-US")}</td>
-        <td>${d.powder.toLocaleString("en-US")}</td>
-        <td>${d.blanket.toLocaleString("en-US")}</td>
-        <td>${d.totalGlue.toLocaleString("en-US")}</td>
-        <td>${d.totalLaminate.toLocaleString("en-US")}</td>
-        <td>${d.totalStaple.toLocaleString("en-US")}</td>
-      </tr></tbody>
-    </table>`;
+    html += `
+      <div class="card p-2 mb-3 border">
+        <h6 class="fw-bold mb-2 small"><i class="fa-solid fa-toolbox text-primary"></i> Consumables Requirement</h6>
+        <div class="table-responsive" style="overflow:visible;">
+          <table class="table table-bordered table-sm text-center align-middle mb-0 small">
+            <thead>
+              <tr style="background:#f0f7ff;">
+                <th style="color:#e74c3c;">Ink (CMYK)</th>
+                <th style="color:#8e44ad;">Alu (bottle)</th>
+                <th style="color:#2980b9;">Powder</th>
+                <th style="color:#27ae60;">Blanket</th>
+                <th style="color:#d35400;">Glue</th>
+                <th style="color:#f39c12;">Lam</th>
+                <th style="color:#16a085;">Staple</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-bold fs-6">${(d.ink || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold fs-6">${(d.alu || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold fs-6">${(d.powder || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold fs-6">${(d.blanket || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold fs-6">${(d.totalGlue || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold fs-6">${(d.totalLaminate || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold fs-6">${(d.totalStaple || 0).toLocaleString("en-US")}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  // 6. Signatures
+  if (showSignatures) {
+    html += `
+      <div class="print-signature-block">
+        <div class="print-signature-box">Prepared By</div>
+        <div class="print-signature-box">Production Mgr</div>
+        <div class="print-signature-box">Press Operator</div>
+        <div class="print-signature-box">QA / Delivery</div>
+      </div>`;
   }
 
   $("#printArea").html(html);
 }
 
-// Actual print
+// Print customized ticket
 $("#doPrint").on("click", function () {
   const content = document.getElementById("printArea").innerHTML;
   const win = window.open("", "_blank");
-  win.document.write(`<!DOCTYPE html><html><head>
-    <title>Production Job Ticket</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-      body { font-family: 'Poppins', sans-serif; padding: 15px; font-size: 12px; }
-      table { width: 100%; }
-      th { font-size: 11px; font-weight: 700; }
-      td { font-size: 11px; }
-      @media print { body { padding: 5mm; } }
-    </style>
-  </head><body>${content}</body></html>`);
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Production Job Ticket</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 6mm 8mm 6mm 8mm;
+    }
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fff;
+      color: #0f172a;
+      margin: 0;
+      padding: 4mm 6mm;
+      font-size: 8.5px;
+    }
+    h4 { font-size: 14px; font-weight: 800; margin: 0; }
+    h5 { font-size: 12px; font-weight: 800; margin: 0; }
+    h6 { font-size: 9px; font-weight: 700; margin: 0 0 3px 0; }
+    .prod-summary-grid {
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      gap: 4px !important;
+      width: 100% !important;
+      margin-bottom: 6px !important;
+    }
+    .prod-summary-grid > .summary-box {
+      flex: 1 1 0 !important;
+      width: 0 !important;
+      min-width: 0 !important;
+      padding: 4px 2px !important;
+      border-radius: 5px !important;
+      text-align: center !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: center !important;
+      min-height: 48px !important;
+      box-shadow: none !important;
+    }
+    .prod-summary-grid .tiny-label {
+      font-size: 6.5px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.2px !important;
+      margin-bottom: 2px !important;
+      text-transform: uppercase !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: 100% !important;
+    }
+    .prod-summary-grid h5 {
+      font-size: 11.5px !important;
+      font-weight: 800 !important;
+      margin: 0 !important;
+      line-height: 1.1 !important;
+    }
+    .material-badges-row {
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      justify-content: space-between !important;
+      gap: 4px !important;
+      width: 100% !important;
+      margin-bottom: 6px !important;
+    }
+    .material-badges-row .badge {
+      flex: 1 1 0 !important;
+      font-size: 7.5px !important;
+      padding: 3px 4px !important;
+      text-align: center !important;
+      border-radius: 4px !important;
+      white-space: nowrap !important;
+      border: 1px solid rgba(0,0,0,0.08) !important;
+    }
+    .card {
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 5px !important;
+      padding: 5px !important;
+      margin-bottom: 6px !important;
+      box-shadow: none !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    .table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin-bottom: 0 !important;
+      font-size: 8px !important;
+    }
+    .table th {
+      padding: 2.5px 2px !important;
+      font-size: 7.5px !important;
+      font-weight: 700 !important;
+      vertical-align: middle !important;
+      background-color: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      line-height: 1.1 !important;
+    }
+    .table td {
+      padding: 2.5px 2px !important;
+      font-size: 8px !important;
+      vertical-align: middle !important;
+      border-color: #cbd5e1 !important;
+      line-height: 1.1 !important;
+    }
+    .badge {
+      font-size: 7px !important;
+      padding: 1.5px 4px !important;
+    }
+    .print-signature-block {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      margin-top: 8px !important;
+      padding-top: 4px !important;
+      border-top: 1px dashed #cbd5e1 !important;
+      font-size: 8px !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    .print-signature-box {
+      flex: 1 1 0 !important;
+      text-align: center !important;
+      border-top: 1px solid #334155 !important;
+      margin-top: 22px !important;
+      padding-top: 2px !important;
+      font-weight: 600 !important;
+      color: #334155 !important;
+      font-size: 7.5px !important;
+    }
+    @media print {
+      body { padding: 0 !important; margin: 0 !important; }
+    }
+  </style>
+</head>
+<body>
+  ${content}
+</body>
+</html>`);
   win.document.close();
-  setTimeout(() => { win.print(); }, 500);
+  setTimeout(() => {
+    win.focus();
+    win.print();
+  }, 400);
 });

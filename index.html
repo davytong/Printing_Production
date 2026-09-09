@@ -7,8 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Printing Production Suite</title>
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts: Plus Jakarta Sans & Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -204,26 +206,35 @@
       </button>
       <div class="collapse show" id="prodSettings">
         <div class="row g-2">
-          <div class="col-lg-6">
+          <div class="col-lg-4">
             <div class="card p-2 h-100">
               <h6 class="fw-bold mb-2 small"><i class="fa-solid fa-cogs"></i> Machine & Printing</h6>
               <div class="row g-1">
-                <div class="col-4"><label class="tiny-label">Forms/Day</label><input id="prodFormsPerDay" class="form-control form-control-sm" type="number" min="1" value="10" inputmode="numeric" title="How many forms (children) can be printed per day (both sides)"></div>
-                <div class="col-4"><label class="tiny-label">Sheets/Day</label><input id="prodDailyCap" class="form-control form-control-sm" type="number" min="1" value="50000" inputmode="numeric" title="Daily sheet capacity for material calc"></div>
-                <div class="col-4"><label class="tiny-label">Waste %</label><input id="prodWaste" class="form-control form-control-sm" type="number" min="0" value="5" inputmode="numeric"></div>
-                <div class="col-4"><label class="tiny-label">Blanket</label><input id="prodBlanketLife" class="form-control form-control-sm" type="number" min="1" value="500000" inputmode="numeric"></div>
-                <div class="col-4"><label class="tiny-label">A1/Pack</label><input id="prodA1Pack" class="form-control form-control-sm" type="number" min="1" value="500" inputmode="numeric"></div>
-                <div class="col-4"><label class="tiny-label">Cover/Pack(A1)</label><input id="prodCoverPack" class="form-control form-control-sm" type="number" min="1" value="100" inputmode="numeric"></div>
+                <div class="col-6"><label class="tiny-label">Producing/Day</label><input id="prodFormsPerDay" class="form-control form-control-sm" type="number" min="1" value="10" inputmode="numeric" title="How many children we can produce in day"></div>
+                <div class="col-6"><label class="tiny-label">Sheets/Day</label><input id="prodDailyCap" class="form-control form-control-sm" type="number" min="1" value="50000" inputmode="numeric" title="Daily sheet capacity for press"></div>
+                <div class="col-6"><label class="tiny-label">Waste %</label><input id="prodWaste" class="form-control form-control-sm" type="number" min="0" value="5" inputmode="numeric"></div>
+                <div class="col-6"><label class="tiny-label">Blanket Life</label><input id="prodBlanketLife" class="form-control form-control-sm" type="number" min="1" value="500000" inputmode="numeric"></div>
               </div>
             </div>
           </div>
-          <div class="col-lg-6">
+          <div class="col-lg-4">
+            <div class="card p-2 h-100">
+              <h6 class="fw-bold mb-2 small"><i class="fa-solid fa-layer-group"></i> Paper Pack Sizes (Sheet/Pk)</h6>
+              <div class="row g-1">
+                <div class="col-6"><label class="tiny-label">WF (Sheet/Pk)</label><input id="prodWfPack" class="form-control form-control-sm" type="number" min="1" value="500" inputmode="numeric" title="Woodfree / HVS sheets per pack"></div>
+                <div class="col-6"><label class="tiny-label">MT (Sheet/Pk)</label><input id="prodMtPack" class="form-control form-control-sm" type="number" min="1" value="250" inputmode="numeric" title="Matte paper sheets per pack"></div>
+                <div class="col-6"><label class="tiny-label">GL (Sheet/Pk)</label><input id="prodGlPack" class="form-control form-control-sm" type="number" min="1" value="100" inputmode="numeric" title="Gloss paper sheets per pack"></div>
+                <div class="col-6"><label class="tiny-label">Cover (Sheet/Pk)</label><input id="prodCoverPack" class="form-control form-control-sm" type="number" min="1" value="100" inputmode="numeric" title="Cover board sheets per pack"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
             <div class="card p-2 h-100">
               <h6 class="fw-bold mb-2 small"><i class="fa-solid fa-boxes-stacked"></i> Consumables</h6>
               <div class="row g-1">
                 <div class="col-4"><label class="tiny-label">Ink(CMYK)</label><input id="prodInkCap" class="form-control form-control-sm" type="number" min="1" value="33000" inputmode="numeric"></div>
                 <div class="col-4"><label class="tiny-label">Alu(bottle)</label><input id="prodAluCap" class="form-control form-control-sm" type="number" min="1" value="15000" inputmode="numeric"></div>
-                <div class="col-4"><label class="tiny-label">Powder(pack)</label><input id="prodPowderCap" class="form-control form-control-sm" type="number" min="1" value="22000" inputmode="numeric"></div>
+                <div class="col-4"><label class="tiny-label">Powder</label><input id="prodPowderCap" class="form-control form-control-sm" type="number" min="1" value="22000" inputmode="numeric"></div>
                 <div class="col-4"><label class="tiny-label">Glue</label><input id="prodGlueCap" class="form-control form-control-sm" type="number" min="1" value="10000" inputmode="numeric"></div>
                 <div class="col-4"><label class="tiny-label">Laminate</label><input id="prodLamCap" class="form-control form-control-sm" type="number" min="1" value="4000" inputmode="numeric"></div>
                 <div class="col-4"><label class="tiny-label">Staples</label><input id="prodStapleCap" class="form-control form-control-sm" type="number" min="1" value="10000" inputmode="numeric"></div>
@@ -270,43 +281,57 @@
     </div>
 
     <!-- Summary Boxes -->
-    <div class="row g-2 mb-3" id="prodSummaryRow">
-      <div class="col-4 col-md-2">
+    <div class="row g-2 mb-2" id="prodSummaryRow">
+      <div class="col-4 col-md-3 col-lg">
         <div class="summary-box" style="background:#f0f0f0; border:2px solid #7f8c8d;">
           <div class="tiny-label text-uppercase">Books</div>
           <h5 id="prodTotalBooks" class="mb-0 fw-bold" style="color:#2c3e50;">0</h5>
         </div>
       </div>
-      <div class="col-4 col-md-2">
+      <div class="col-4 col-md-3 col-lg">
         <div class="summary-box" style="background:#eaf6ff; border:2px solid #2980b9;">
           <div class="tiny-label text-uppercase">Total Qty</div>
           <h5 id="prodTotalQty" class="mb-0 fw-bold" style="color:#2980b9;">0</h5>
         </div>
       </div>
-      <div class="col-4 col-md-2">
+      <div class="col-4 col-md-3 col-lg">
+        <div class="summary-box" style="background:#f5eef8; border:2px solid #8e44ad;">
+          <div class="tiny-label text-uppercase">Total Children</div>
+          <h5 id="prodTotalFormsSummary" class="mb-0 fw-bold" style="color:#8e44ad;">0</h5>
+        </div>
+      </div>
+      <div class="col-4 col-md-3 col-lg">
         <div class="summary-box" style="background:#e8fdf5; border:2px solid #27ae60;">
           <div class="tiny-label text-uppercase">A2 Sheets</div>
           <h5 id="prodInsideSheets" class="mb-0 fw-bold" style="color:#27ae60;">0</h5>
         </div>
       </div>
-      <div class="col-4 col-md-2">
+      <div class="col-4 col-md-4 col-lg">
         <div class="summary-box" style="background:#fef9e7; border:2px solid #f39c12;">
           <div class="tiny-label text-uppercase">Inside Packs</div>
           <h5 id="prodInsidePack" class="mb-0 fw-bold" style="color:#d68910;">0</h5>
         </div>
       </div>
-      <div class="col-4 col-md-2">
+      <div class="col-4 col-md-4 col-lg">
         <div class="summary-box" style="background:#fdedec; border:2px solid #e74c3c;">
           <div class="tiny-label text-uppercase">Cover Packs</div>
           <h5 id="prodCoverPackNeed" class="mb-0 fw-bold" style="color:#c0392b;">0</h5>
         </div>
       </div>
-      <div class="col-4 col-md-2">
-        <div class="summary-box" style="background:#f4ecf7; border:2px solid #8e44ad;">
+      <div class="col-4 col-md-4 col-lg">
+        <div class="summary-box" style="background:#e8f4f8; border:2px solid #16a085;">
           <div class="tiny-label text-uppercase">CTP Plates</div>
-          <h5 id="prodCtpResult" class="mb-0 fw-bold" style="color:#8e44ad;">0</h5>
+          <h5 id="prodCtpResult" class="mb-0 fw-bold" style="color:#16a085;">0</h5>
         </div>
       </div>
+    </div>
+
+    <!-- Material Packs Breakdown -->
+    <div class="d-flex flex-wrap gap-2 mb-3" id="prodMaterialBreakdown">
+      <span class="badge bg-primary px-2 py-1" id="prodWfPackBadge"><i class="fa-solid fa-layer-group"></i> WF: 0 packs</span>
+      <span class="badge bg-secondary px-2 py-1" id="prodMtPackBadge"><i class="fa-solid fa-layer-group"></i> MT: 0 packs</span>
+      <span class="badge bg-dark px-2 py-1" id="prodGlPackBadge"><i class="fa-solid fa-layer-group"></i> GL: 0 packs</span>
+      <span class="badge bg-danger px-2 py-1" id="prodCoverBadge"><i class="fa-solid fa-box"></i> Cover: 0 packs</span>
     </div>
 
     <!-- Results Tables -->
@@ -314,8 +339,9 @@
       <div class="col-12 mb-3">
         <div class="card p-2">
           <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-            <h6 class="fw-bold mb-0 small"><i class="fa-solid fa-list-check"></i> Job Breakdown (1 Form = 8pg one side, 1 A2 = 2 forms)</h6>
+            <h6 class="fw-bold mb-0 small"><i class="fa-solid fa-list-check"></i> Job Breakdown (1 Child = 8pg BOTH sides)</h6>
             <div class="d-flex gap-2 align-items-center">
+              <span class="badge bg-primary" id="prodSpeedBadge"><i class="fa-solid fa-gauge-high"></i> 10 Child/Day</span>
               <span class="badge bg-secondary" id="prodDays">0 Days</span>
               <span class="badge" style="background:#27ae60;" id="prodFinishDate">—</span>
             </div>
@@ -328,21 +354,25 @@
                   <th class="text-start">Title</th>
                   <th>Pg</th>
                   <th style="color:#2980b9;">Qty</th>
-                  <th style="color:#8e44ad;">Forms</th>
+                  <th>Mat</th>
+                  <th>Bind</th>
+                  <th style="color:#8e44ad;">Child</th>
                   <th style="color:#d35400;">Impress.</th>
-                  <th style="color:#27ae60;">A2</th>
+                  <th style="color:#27ae60;">A2 Sheets</th>
                   <th style="color:#c0392b;">Plates</th>
                   <th style="color:#fff; background:#2980b9;">Days</th>
                 </tr>
               </thead>
               <tbody id="prodDetailTable">
-                <tr><td colspan="9" class="text-muted">No data yet</td></tr>
+                <tr><td colspan="11" class="text-muted">No data yet</td></tr>
               </tbody>
               <tfoot id="prodDetailFoot" style="display:none">
                 <tr style="background:#2c3e50; color:#fff; font-weight:700;">
                   <td colspan="2" class="text-end">TOTAL</td>
                   <td>—</td>
                   <td id="prodTotalQty2">0</td>
+                  <td>—</td>
+                  <td>—</td>
                   <td id="prodTotalForms">0</td>
                   <td id="prodTotalImpress">0</td>
                   <td id="prodTotalA2" style="color:#55efc4;">0</td>
@@ -386,6 +416,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Print Signature & Approval Block (visible only when printing) -->
+    <div class="print-signature-block d-none d-print-flex">
+      <div class="print-signature-box">Prepared By</div>
+      <div class="print-signature-box">Production Mgr</div>
+      <div class="print-signature-box">Press Operator</div>
+      <div class="print-signature-box">QA / Delivery</div>
+    </div>
   </div>
 </div>
 
@@ -394,29 +432,82 @@
 <!-- ===== PRINT PREVIEW MODAL ===== -->
 <div class="modal fade" id="printPreviewModal">
   <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header py-2">
-        <h6 class="modal-title"><i class="fa fa-print"></i> Print Preview</h6>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header py-2 bg-primary text-white">
+        <h6 class="modal-title fw-bold"><i class="fa fa-print"></i> Custom Print Selection & Preview</h6>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-3" id="printPreviewContent">
         <!-- Print options -->
-        <div class="mb-3 no-print-inside">
-          <label class="fw-bold small">Select sections to print:</label>
-          <div class="d-flex flex-wrap gap-3 mt-1">
-            <label class="form-check-label small"><input type="checkbox" class="form-check-input print-opt" value="summary" checked> Summary</label>
-            <label class="form-check-label small"><input type="checkbox" class="form-check-input print-opt" value="breakdown" checked> Job Breakdown</label>
-            <label class="form-check-label small"><input type="checkbox" class="form-check-input print-opt" value="consumables" checked> Consumables</label>
-            <label class="form-check-label small"><input type="checkbox" class="form-check-input print-opt" value="header" checked> Header/Title</label>
+        <div class="card p-3 mb-3 bg-light border">
+          <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <span class="fw-bold small text-dark"><i class="fa-solid fa-list-check text-primary"></i> Select sections to print:</span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm py-0 px-2" id="selectAllPrintOpts" type="button"><i class="bi bi-check-all"></i> Select All</button>
+              <button class="btn btn-outline-secondary btn-sm py-0 px-2" id="clearAllPrintOpts" type="button"><i class="bi bi-dash"></i> Clear All</button>
+            </div>
+          </div>
+          <div class="row g-2">
+            <div class="col-6 col-md-4 col-lg-2">
+              <div class="form-check form-switch">
+                <input type="checkbox" class="form-check-input print-opt" id="optHeader" value="header" checked>
+                <label class="form-check-label small fw-semibold" for="optHeader">Header/Title</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <div class="form-check form-switch">
+                <input type="checkbox" class="form-check-input print-opt" id="optSummary" value="summary" checked>
+                <label class="form-check-label small fw-semibold" for="optSummary">7 Summary Cards</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <div class="form-check form-switch">
+                <input type="checkbox" class="form-check-input print-opt" id="optMaterials" value="materials" checked>
+                <label class="form-check-label small fw-semibold" for="optMaterials">Paper Badges</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <div class="form-check form-switch">
+                <input type="checkbox" class="form-check-input print-opt" id="optBreakdown" value="breakdown" checked>
+                <label class="form-check-label small fw-semibold" for="optBreakdown">Job Breakdown</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <div class="form-check form-switch">
+                <input type="checkbox" class="form-check-input print-opt" id="optConsumables" value="consumables" checked>
+                <label class="form-check-label small fw-semibold" for="optConsumables">Consumables</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <div class="form-check form-switch">
+                <input type="checkbox" class="form-check-input print-opt" id="optSignatures" value="signatures" checked>
+                <label class="form-check-label small fw-semibold" for="optSignatures">Signatures</label>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Book Filter -->
+          <div id="printBookFilterSection" class="mt-2 pt-2 border-top">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="small fw-semibold text-muted"><i class="fa-solid fa-book"></i> Filter Books:</span>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none small" id="selectAllPrintBooks">All Books</button>
+                <span class="text-muted small">|</span>
+                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-muted small" id="clearAllPrintBooks">None</button>
+              </div>
+            </div>
+            <div id="printBookCheckboxes" class="d-flex flex-wrap gap-2"></div>
           </div>
         </div>
-        <hr class="no-print-inside">
-        <!-- Print content rendered here -->
-        <div id="printArea"></div>
+        
+        <!-- Live Print Preview Container -->
+        <div class="p-3 bg-white border rounded shadow-sm" id="printAreaWrapper">
+          <div id="printArea"></div>
+        </div>
       </div>
-      <div class="modal-footer py-2">
-        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-        <button class="btn btn-primary btn-sm" id="doPrint">
+      <div class="modal-footer py-2 bg-light">
+        <button class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
+        <button class="btn btn-primary btn-sm px-4 fw-bold" id="doPrint">
           <i class="fa fa-print"></i> Print Now
         </button>
       </div>
