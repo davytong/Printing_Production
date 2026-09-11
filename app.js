@@ -840,10 +840,8 @@ function runProductionCalc() {
     const netInsideA2 = (forms / 2) * qty;
     const insideA2 = Math.ceil(netInsideA2 * (1 + waste));
 
-    // CTP Plates: 4 plates per form for inside (CMYK) + 4 plates for cover (CMYK)
-    const insidePlates = forms * 4;
-    const coverPlates = 4;
-    const plateCount = insidePlates + coverPlates;
+    // CTP Plates: 1 Child = 8 plates (4/4 both sides A2)
+    const plateCount = forms * 8;
 
     totalInsideA2 += insideA2;
     materialSheets[material] = (materialSheets[material] || 0) + insideA2;
@@ -858,12 +856,10 @@ function runProductionCalc() {
     // Every book needs 1 cover (A3)
     totalCoverA3 += qty;
 
-    // Impressions & Days calculation
-    const impressions = forms * qty;
+    // Days calculation
     const daysForBook = Math.max(Math.ceil(forms / formsPerDay), Math.ceil(insideA2 / dailyCap));
 
     totalForms += forms;
-    totalImpressions += impressions;
     totalQty += qty;
 
     processedCount++;
@@ -876,7 +872,6 @@ function runProductionCalc() {
       <td><span class="badge bg-secondary">${material}</span></td>
       <td><span class="badge ${binding === "Perfect" ? "bg-primary" : "bg-info"}">${binding}</span></td>
       <td style="color:#8e44ad;">${forms.toLocaleString("en-US")}</td>
-      <td style="color:#d35400;">${impressions.toLocaleString("en-US")}</td>
       <td style="color:#27ae60; font-weight:600;">${insideA2.toLocaleString("en-US")}</td>
       <td style="color:#c0392b;">${plateCount.toLocaleString("en-US")}</td>
       <td style="background:#eaf6ff; color:#2980b9; font-weight:700;">${daysForBook.toLocaleString("en-US")}</td>
@@ -900,7 +895,7 @@ function runProductionCalc() {
   }
 
   if (processedCount === 0) {
-    detailTable.innerHTML = '<tr><td colspan="11" class="text-muted">Please enter book data above</td></tr>';
+    detailTable.innerHTML = '<tr><td colspan="10" class="text-muted">Please enter book data above</td></tr>';
     $("#prodPrint").hide();
     $("#prodDetailFoot").hide();
     return;
@@ -919,7 +914,6 @@ function runProductionCalc() {
   $("#prodDetailFoot").show();
   $("#prodTotalQty2").text(totalQty.toLocaleString("en-US"));
   $("#prodTotalForms").text(totalForms.toLocaleString("en-US"));
-  $("#prodTotalImpress").text(totalImpressions.toLocaleString("en-US"));
   $("#prodTotalA2").text(totalInsideA2.toLocaleString("en-US"));
   $("#prodTotalPlates").text(totalCTP.toLocaleString("en-US"));
   $("#prodTotalDaysCol").text(totalDaysAll.toLocaleString("en-US"));
@@ -979,19 +973,20 @@ function runProductionCalc() {
   window._prodData = {
     books: [],
     totalBooks: processedCount, totalQty,
-    totalForms, totalImpressions, totalInsideA2, totalCTP, totalDaysAll,
+    totalForms, totalInsideA2, totalCTP, totalDaysAll,
     insidePack, coverPackNeed, ink, alu, powder, blanket,
     totalGlue, totalLaminate, totalStaple,
     materialSheets, wfPacks, mtPacks, glPacks,
     wfPackCap, mtPackCap, glPackCap, coverPack,
     formsPerDay,
+    startDate,
     finishDate: schedule.finishDate, calendarDays: schedule.calendarDays,
     holidays: prodHolidays.length
   };
   // Collect book details from table
   detailTable.querySelectorAll("tr").forEach((tr) => {
     const cells = tr.querySelectorAll("td");
-    if (cells.length >= 11) {
+    if (cells.length >= 10) {
       window._prodData.books.push({
         num: cells[0].textContent,
         title: cells[1].textContent,
@@ -1000,10 +995,14 @@ function runProductionCalc() {
         material: cells[4].textContent,
         binding: cells[5].textContent,
         forms: cells[6].textContent,
-        impressions: cells[7].textContent,
-        a2: cells[8].textContent,
-        plates: cells[9].textContent,
-        days: cells[10].textContent
+        a2: cells[7].textContent,
+        plates: cells[8].textContent,
+        days: cells[9].textContent,
+        rawQty: parseInt(cells[3].textContent.replace(/,/g, "")) || 0,
+        rawForms: parseInt(cells[6].textContent.replace(/,/g, "")) || 0,
+        rawA2: parseInt(cells[7].textContent.replace(/,/g, "")) || 0,
+        rawPlates: parseInt(cells[8].textContent.replace(/,/g, "")) || 0,
+        rawDays: parseInt(cells[9].textContent.replace(/,/g, "")) || 0
       });
     }
   });
@@ -1069,11 +1068,11 @@ $("#prodExportExcel").on("click", function () {
 
   // Job Breakdown
   data.push(["JOB BREAKDOWN"]);
-  data.push(["#", "Title", "Pages", "Qty", "Material", "Binding", "Child", "Impressions", "A2 Sheets", "Plates", "Days"]);
+  data.push(["#", "Title", "Pages", "Qty", "Material", "Binding", "Child", "A2 Sheets", "Plates", "Days"]);
   d.books.forEach((b) => {
-    data.push([b.num, b.title, b.pages, b.qty, b.material, b.binding, b.forms, b.impressions, b.a2, b.plates, b.days]);
+    data.push([b.num, b.title, b.pages, b.qty, b.material, b.binding, b.forms, b.a2, b.plates, b.days]);
   });
-  data.push(["", "TOTAL", "", d.totalQty, "", "", d.totalForms, d.totalImpressions, d.totalInsideA2, d.totalCTP, d.totalDaysAll]);
+  data.push(["", "TOTAL", "", d.totalQty, "", "", d.totalForms, d.totalInsideA2, d.totalCTP, d.totalDaysAll]);
   data.push([]);
 
   // Consumables
@@ -1084,7 +1083,7 @@ $("#prodExportExcel").on("click", function () {
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws["!cols"] = [
     { wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 10 },
-    { wch: 8 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 6 }
+    { wch: 8 }, { wch: 12 }, { wch: 8 }, { wch: 6 }
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Production");
@@ -1124,8 +1123,8 @@ $("#prodPrint").on("click", function () {
   }
 });
 
-// Rebuild preview when section checkboxes change
-$(document).on("change", ".print-opt, .print-book-opt", function () {
+// Rebuild preview when section checkboxes or print scale change
+$(document).on("change", ".print-opt, .print-book-opt, #printScaleSelect", function () {
   buildPrintPreview();
 });
 
@@ -1157,6 +1156,7 @@ function buildPrintPreview() {
   const d = window._prodData;
   if (!d) return;
 
+  const scale = $("#printScaleSelect").val() || "xl";
   const showHeader = $("#optHeader").is(":checked");
   const showSummary = $("#optSummary").is(":checked");
   const showMaterials = $("#optMaterials").is(":checked");
@@ -1179,53 +1179,51 @@ function buildPrintPreview() {
   let dispQty = 0;
   let dispForms = 0;
   let dispA2 = 0;
-  let dispImpressions = 0;
   let dispPlates = 0;
   let dispDays = 0;
 
   if (isSubset) {
     booksToDisplay.forEach(b => {
       dispQty += b.rawQty || 0;
-      dispForms += b.forms || 0;
-      dispA2 += b.a2Raw || 0;
-      dispImpressions += b.impressionsRaw || 0;
-      dispPlates += b.platesRaw || 0;
-      dispDays += b.days || 0;
+      dispForms += b.rawForms || 0;
+      dispA2 += b.rawA2 || 0;
+      dispPlates += b.rawPlates || 0;
+      dispDays += b.rawDays || 0;
     });
   } else {
     dispBooks = d.totalBooks;
     dispQty = d.totalQty;
     dispForms = d.totalForms;
     dispA2 = d.totalInsideA2;
-    dispImpressions = d.totalImpressions;
     dispPlates = d.totalCTP;
     dispDays = d.totalDaysAll;
   }
 
-  let html = "";
+  let html = `<div class="print-container print-scale-${scale}">`;
 
   // 1. Header
   if (showHeader) {
     html += `
-      <div class="print-header text-center mb-3 pb-2 border-bottom">
+      <div class="print-header mb-3 pb-2 border-bottom">
         <div class="d-flex justify-content-between align-items-center mb-1">
           <div class="text-start">
-            <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-industry text-primary"></i> Production Job Ticket</h5>
-            <div class="d-flex gap-1 mt-1">
-              <span class="badge bg-dark">${dispBooks} Job${dispBooks > 1 ? "s" : ""}</span>
-              <span class="badge bg-primary">${dispQty.toLocaleString("en-US")} Total Qty</span>
-              <span class="badge bg-purple" style="background:#8e44ad; color:#fff;">${dispForms.toLocaleString("en-US")} Children</span>
+            <h4 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-industry text-primary me-1"></i> Production Job Ticket</h4>
+            <div class="d-flex gap-2 mt-1">
+              <span class="badge bg-dark px-3 py-1">${dispBooks} Job${dispBooks > 1 ? "s" : ""}</span>
+              <span class="badge bg-primary px-3 py-1">${dispQty.toLocaleString("en-US")} Total Qty</span>
+              <span class="badge bg-purple px-3 py-1" style="background:#8e44ad; color:#fff;">${dispForms.toLocaleString("en-US")} Children</span>
             </div>
           </div>
-          <div class="text-end small text-muted">
-            <div><b>Date:</b> ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</div>
-            <div><b>Target Finish:</b> <span class="badge bg-success">${d.finishDate}</span></div>
+          <div class="text-end" style="font-size: 13.5px; color:#475569;">
+            <div><b>Start Date:</b> <span class="badge bg-primary px-2 py-1" style="font-size: 13px;">${d.startDate || document.getElementById("prodStartDate")?.value || new Date().toISOString().split("T")[0]}</span></div>
+            <div class="mt-1"><b>Target Finish:</b> <span class="badge bg-success px-2 py-1" style="font-size: 13px;">${d.finishDate}</span></div>
           </div>
         </div>
-        <div class="d-flex justify-content-center gap-3 small text-muted flex-wrap mt-1">
+        <div class="meta-bar d-flex justify-content-center gap-4 text-muted flex-wrap mt-2 pt-2 border-top" style="font-size: 13px;">
           <span><i class="fa-solid fa-gauge-high text-primary"></i> <b>Speed:</b> ${d.formsPerDay || 10} Child/Day</span>
           <span><i class="fa-solid fa-calendar-day text-secondary"></i> <b>Work Days:</b> ${dispDays} Days</span>
-          <span><i class="fa-solid fa-calendar-check text-success"></i> <b>Timeline:</b> ${d.startDate || "N/A"} → ${d.finishDate}</span>
+          <span><i class="fa-solid fa-play text-primary"></i> <b>Start:</b> ${d.startDate || document.getElementById("prodStartDate")?.value || new Date().toISOString().split("T")[0]}</span>
+          <span><i class="fa-solid fa-flag-checkered text-success"></i> <b>Finish:</b> ${d.finishDate}</span>
         </div>
       </div>`;
   }
@@ -1234,33 +1232,33 @@ function buildPrintPreview() {
   if (showSummary) {
     html += `
       <div class="prod-summary-grid mb-3">
-        <div class="summary-box" style="background:#f0f0f0; border:2px solid #7f8c8d;">
-          <div class="tiny-label" style="font-weight:700; color:#555;">BOOKS</div>
-          <h5 class="mb-0 fw-bold" style="color:#2c3e50;">${dispBooks.toLocaleString("en-US")}</h5>
+        <div class="summary-box" style="background:#f8fafc; border:2.5px solid #64748b;">
+          <div class="tiny-label" style="font-weight:800; color:#475569;">BOOKS</div>
+          <h5 class="mb-0 fw-bold" style="color:#1e293b;">${dispBooks.toLocaleString("en-US")}</h5>
         </div>
-        <div class="summary-box" style="background:#eaf6ff; border:2px solid #2980b9;">
-          <div class="tiny-label" style="font-weight:700; color:#2980b9;">TOTAL QTY</div>
-          <h5 class="mb-0 fw-bold" style="color:#2980b9;">${dispQty.toLocaleString("en-US")}</h5>
+        <div class="summary-box" style="background:#eff6ff; border:2.5px solid #3b82f6;">
+          <div class="tiny-label" style="font-weight:800; color:#1d4ed8;">TOTAL QTY</div>
+          <h5 class="mb-0 fw-bold" style="color:#1e40af;">${dispQty.toLocaleString("en-US")}</h5>
         </div>
-        <div class="summary-box" style="background:#f5eef8; border:2px solid #8e44ad;">
-          <div class="tiny-label" style="font-weight:700; color:#8e44ad;">TOTAL CHILDREN</div>
-          <h5 class="mb-0 fw-bold" style="color:#8e44ad;">${dispForms.toLocaleString("en-US")}</h5>
+        <div class="summary-box" style="background:#faf5ff; border:2.5px solid #a855f7;">
+          <div class="tiny-label" style="font-weight:800; color:#7e22ce;">TOTAL CHILDREN</div>
+          <h5 class="mb-0 fw-bold" style="color:#6b21a8;">${dispForms.toLocaleString("en-US")}</h5>
         </div>
-        <div class="summary-box" style="background:#e8fdf5; border:2px solid #27ae60;">
-          <div class="tiny-label" style="font-weight:700; color:#27ae60;">A2 SHEETS</div>
-          <h5 class="mb-0 fw-bold" style="color:#27ae60;">${dispA2.toLocaleString("en-US")}</h5>
+        <div class="summary-box" style="background:#f0fdf4; border:2.5px solid #22c55e;">
+          <div class="tiny-label" style="font-weight:800; color:#15803d;">A2 SHEETS</div>
+          <h5 class="mb-0 fw-bold" style="color:#166534;">${dispA2.toLocaleString("en-US")}</h5>
         </div>
-        <div class="summary-box" style="background:#fef9e7; border:2px solid #f39c12;">
-          <div class="tiny-label" style="font-weight:700; color:#d68910;">INSIDE PACKS</div>
-          <h5 class="mb-0 fw-bold" style="color:#d68910;">${d.insidePack.toLocaleString("en-US")}</h5>
+        <div class="summary-box" style="background:#fffbeb; border:2.5px solid #f59e0b;">
+          <div class="tiny-label" style="font-weight:800; color:#b45309;">INSIDE PACKS</div>
+          <h5 class="mb-0 fw-bold" style="color:#92400e;">${d.insidePack.toLocaleString("en-US")}</h5>
         </div>
-        <div class="summary-box" style="background:#fdedec; border:2px solid #e74c3c;">
-          <div class="tiny-label" style="font-weight:700; color:#c0392b;">COVER PACKS</div>
-          <h5 class="mb-0 fw-bold" style="color:#c0392b;">${d.coverPackNeed.toLocaleString("en-US")}</h5>
+        <div class="summary-box" style="background:#fef2f2; border:2.5px solid #ef4444;">
+          <div class="tiny-label" style="font-weight:800; color:#b91c1c;">COVER PACKS</div>
+          <h5 class="mb-0 fw-bold" style="color:#991b1b;">${d.coverPackNeed.toLocaleString("en-US")}</h5>
         </div>
-        <div class="summary-box" style="background:#e8f4f8; border:2px solid #16a085;">
-          <div class="tiny-label" style="font-weight:700; color:#16a085;">CTP PLATES</div>
-          <h5 class="mb-0 fw-bold" style="color:#16a085;">${dispPlates.toLocaleString("en-US")}</h5>
+        <div class="summary-box" style="background:#f0fdfa; border:2.5px solid #14b8a6;">
+          <div class="tiny-label" style="font-weight:800; color:#0f766e;">CTP PLATES</div>
+          <h5 class="mb-0 fw-bold" style="color:#115e59;">${dispPlates.toLocaleString("en-US")}</h5>
         </div>
       </div>`;
   }
@@ -1269,45 +1267,44 @@ function buildPrintPreview() {
   if (showMaterials) {
     html += `
       <div class="material-badges-row mb-3">
-        <span class="badge bg-primary" style="background:#2980b9 !important;"><i class="fa-solid fa-layer-group"></i> WF: ${(d.wfSheets || 0).toLocaleString("en-US")} sh (${(d.wfPacks || 0).toLocaleString("en-US")} pk @${d.wfPackSize || 500})</span>
-        <span class="badge bg-secondary" style="background:#7f8c8d !important;"><i class="fa-solid fa-layer-group"></i> MT: ${(d.mtSheets || 0).toLocaleString("en-US")} sh (${(d.mtPacks || 0).toLocaleString("en-US")} pk @${d.mtPackSize || 250})</span>
-        <span class="badge bg-dark" style="background:#2c3e50 !important;"><i class="fa-solid fa-layer-group"></i> GL: ${(d.glSheets || 0).toLocaleString("en-US")} sh (${(d.glPacks || 0).toLocaleString("en-US")} pk @${d.glPackSize || 100})</span>
-        <span class="badge bg-danger" style="background:#c0392b !important;"><i class="fa-solid fa-box"></i> Cover: ${(d.coverSheetsA3 || 0).toLocaleString("en-US")} A3 (${(d.coverPackNeed || 0).toLocaleString("en-US")} pk @${d.coverPackSize || 100})</span>
+        <span class="badge" style="background:#2563eb !important; color:#fff;"><i class="fa-solid fa-layer-group"></i> WF: ${(d.wfSheets || 0).toLocaleString("en-US")} sh (${(d.wfPacks || 0).toLocaleString("en-US")} pk @${d.wfPackSize || 500})</span>
+        <span class="badge" style="background:#64748b !important; color:#fff;"><i class="fa-solid fa-layer-group"></i> MT: ${(d.mtSheets || 0).toLocaleString("en-US")} sh (${(d.mtPacks || 0).toLocaleString("en-US")} pk @${d.mtPackSize || 250})</span>
+        <span class="badge" style="background:#334155 !important; color:#fff;"><i class="fa-solid fa-layer-group"></i> GL: ${(d.glSheets || 0).toLocaleString("en-US")} sh (${(d.glPacks || 0).toLocaleString("en-US")} pk @${d.glPackSize || 100})</span>
+        <span class="badge" style="background:#dc2626 !important; color:#fff;"><i class="fa-solid fa-box"></i> Cover: ${(d.coverSheetsA3 || 0).toLocaleString("en-US")} A3 (${(d.coverPackNeed || 0).toLocaleString("en-US")} pk @${d.coverPackSize || 100})</span>
       </div>`;
   }
 
   // 4. Job Breakdown Table
   if (showBreakdown) {
     html += `
-      <div class="card p-2 mb-3 border">
+      <div class="card p-3 mb-3 border">
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-          <h6 class="fw-bold mb-0 small"><i class="fa-solid fa-list-check text-primary"></i> Job Breakdown (1 Child = 8pg BOTH sides)</h6>
-          <div class="d-flex gap-1 align-items-center">
+          <h6 class="fw-bold mb-0"><i class="fa-solid fa-list-check text-primary me-1"></i> Job Breakdown <span class="text-muted fw-normal" style="font-size:12px;">(1 Child = 8pg BOTH sides)</span></h6>
+          <div class="d-flex gap-2 align-items-center">
             <span class="badge bg-primary">${d.formsPerDay || 10} Child/Day</span>
             <span class="badge bg-secondary">${dispDays} Work Days</span>
-            <span class="badge bg-success">${d.finishDate}</span>
+            <span class="badge bg-success">${d.startDate || document.getElementById("prodStartDate")?.value || ""} → ${d.finishDate}</span>
           </div>
         </div>
         <div class="table-responsive" style="overflow:visible;">
-          <table class="table table-bordered table-sm text-center align-middle mb-0 small">
+          <table class="table table-bordered text-center align-middle mb-0">
             <thead>
-              <tr style="background:#f0f7ff; color:#1e3a8a;">
-                <th style="width:30px;">#</th>
+              <tr style="background:#f1f5f9; color:#1e293b;">
+                <th style="width:40px;">#</th>
                 <th class="text-start">Title</th>
                 <th>Pg</th>
-                <th style="color:#2980b9;">Qty</th>
+                <th style="color:#2563eb;">Qty</th>
                 <th>Mat</th>
                 <th>Bind</th>
-                <th style="color:#8e44ad;">Child</th>
-                <th style="color:#d35400;">Impress.</th>
-                <th style="color:#27ae60;">A2 Sheets</th>
-                <th style="color:#c0392b;">Plates</th>
-                <th style="background:#2980b9; color:#fff;">Days</th>
+                <th style="color:#7e22ce;">Child</th>
+                <th style="color:#16a34a;">A2 Sheets</th>
+                <th style="color:#dc2626;">Plates</th>
+                <th style="background:#2563eb; color:#fff;">Days</th>
               </tr>
             </thead>
             <tbody>`;
     if (booksToDisplay.length === 0) {
-      html += `<tr><td colspan="11" class="text-muted py-2">No books selected</td></tr>`;
+      html += `<tr><td colspan="10" class="text-muted py-2">No books selected</td></tr>`;
     } else {
       booksToDisplay.forEach(b => {
         html += `
@@ -1315,31 +1312,29 @@ function buildPrintPreview() {
             <td>${b.num}</td>
             <td class="text-start fw-semibold">${b.title}</td>
             <td>${b.pages}</td>
-            <td style="color:#2980b9; font-weight:700;">${b.qty}</td>
+            <td style="color:#2563eb; font-weight:700;">${b.qty}</td>
             <td><span class="badge bg-light text-dark border">${b.material}</span></td>
             <td><span class="badge ${b.binding === 'Perfect' ? 'bg-primary' : 'bg-info'}">${b.binding}</span></td>
-            <td style="color:#8e44ad; font-weight:700;">${b.forms}</td>
-            <td style="color:#d35400;">${b.impressions}</td>
-            <td style="color:#27ae60; font-weight:700;">${b.a2}</td>
-            <td style="color:#c0392b;">${b.plates}</td>
-            <td style="background:#eaf2f8; font-weight:700; color:#2980b9;">${b.days}</td>
+            <td style="color:#7e22ce; font-weight:700;">${b.forms}</td>
+            <td style="color:#16a34a; font-weight:700;">${b.a2}</td>
+            <td style="color:#dc2626;">${b.plates}</td>
+            <td style="background:#eff6ff; font-weight:700; color:#2563eb;">${b.days}</td>
           </tr>`;
       });
     }
     html += `
             </tbody>
             <tfoot>
-              <tr style="background:#2c3e50; color:#fff; font-weight:700;">
+              <tr style="background:#1e293b; color:#fff; font-weight:700;">
                 <td colspan="2" class="text-end">TOTAL</td>
                 <td>—</td>
                 <td>${dispQty.toLocaleString("en-US")}</td>
                 <td>—</td>
                 <td>—</td>
                 <td>${dispForms.toLocaleString("en-US")}</td>
-                <td>${dispImpressions.toLocaleString("en-US")}</td>
-                <td style="color:#55efc4;">${dispA2.toLocaleString("en-US")}</td>
+                <td style="color:#4ade80;">${dispA2.toLocaleString("en-US")}</td>
                 <td>${dispPlates.toLocaleString("en-US")}</td>
-                <td style="background:#2980b9;">${dispDays.toLocaleString("en-US")}</td>
+                <td style="background:#2563eb;">${dispDays.toLocaleString("en-US")}</td>
               </tr>
             </tfoot>
           </table>
@@ -1350,30 +1345,30 @@ function buildPrintPreview() {
   // 5. Consumables
   if (showConsumables) {
     html += `
-      <div class="card p-2 mb-3 border">
-        <h6 class="fw-bold mb-2 small"><i class="fa-solid fa-toolbox text-primary"></i> Consumables Requirement</h6>
+      <div class="card p-3 mb-3 border">
+        <h6 class="fw-bold mb-2"><i class="fa-solid fa-toolbox text-primary me-1"></i> Consumables Requirement</h6>
         <div class="table-responsive" style="overflow:visible;">
-          <table class="table table-bordered table-sm text-center align-middle mb-0 small">
+          <table class="table table-bordered text-center align-middle mb-0 consumables-table">
             <thead>
-              <tr style="background:#f0f7ff;">
-                <th style="color:#e74c3c;">Ink (CMYK)</th>
-                <th style="color:#8e44ad;">Alu (bottle)</th>
-                <th style="color:#2980b9;">Powder</th>
-                <th style="color:#27ae60;">Blanket</th>
-                <th style="color:#d35400;">Glue</th>
-                <th style="color:#f39c12;">Lam</th>
-                <th style="color:#16a085;">Staple</th>
+              <tr style="background:#f1f5f9; color:#1e293b;">
+                <th style="color:#dc2626;">Ink (CMYK)</th>
+                <th style="color:#7e22ce;">Alu (bottle)</th>
+                <th style="color:#2563eb;">Powder</th>
+                <th style="color:#16a34a;">Blanket</th>
+                <th style="color:#ea580c;">Glue</th>
+                <th style="color:#d97706;">Lam</th>
+                <th style="color:#0d9488;">Staple</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="fw-bold fs-6">${(d.ink || 0).toLocaleString("en-US")}</td>
-                <td class="fw-bold fs-6">${(d.alu || 0).toLocaleString("en-US")}</td>
-                <td class="fw-bold fs-6">${(d.powder || 0).toLocaleString("en-US")}</td>
-                <td class="fw-bold fs-6">${(d.blanket || 0).toLocaleString("en-US")}</td>
-                <td class="fw-bold fs-6">${(d.totalGlue || 0).toLocaleString("en-US")}</td>
-                <td class="fw-bold fs-6">${(d.totalLaminate || 0).toLocaleString("en-US")}</td>
-                <td class="fw-bold fs-6">${(d.totalStaple || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold" style="color:#dc2626;">${(d.ink || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold" style="color:#7e22ce;">${(d.alu || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold" style="color:#2563eb;">${(d.powder || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold" style="color:#16a34a;">${(d.blanket || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold" style="color:#ea580c;">${(d.totalGlue || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold" style="color:#d97706;">${(d.totalLaminate || 0).toLocaleString("en-US")}</td>
+                <td class="fw-bold" style="color:#0d9488;">${(d.totalStaple || 0).toLocaleString("en-US")}</td>
               </tr>
             </tbody>
           </table>
@@ -1392,12 +1387,15 @@ function buildPrintPreview() {
       </div>`;
   }
 
+  html += `</div>`; // end print-container
+
   $("#printArea").html(html);
 }
 
 // Print customized ticket
 $("#doPrint").on("click", function () {
   const content = document.getElementById("printArea").innerHTML;
+  const scale = $("#printScaleSelect").val() || "xl";
   const win = window.open("", "_blank");
   win.document.write(`<!DOCTYPE html>
 <html>
@@ -1410,7 +1408,7 @@ $("#doPrint").on("click", function () {
   <style>
     @page {
       size: A4 portrait;
-      margin: 6mm 8mm 6mm 8mm;
+      margin: 10mm 12mm 10mm 12mm;
     }
     * {
       -webkit-print-color-adjust: exact !important;
@@ -1423,47 +1421,76 @@ $("#doPrint").on("click", function () {
       background: #fff;
       color: #0f172a;
       margin: 0;
-      padding: 4mm 6mm;
-      font-size: 8.5px;
+      padding: 6mm 8mm;
+      font-size: 13.5px;
+      line-height: 1.45;
     }
-    h4 { font-size: 14px; font-weight: 800; margin: 0; }
-    h5 { font-size: 12px; font-weight: 800; margin: 0; }
-    h6 { font-size: 9px; font-weight: 700; margin: 0 0 3px 0; }
+    .print-header {
+      margin-bottom: 16px !important;
+      padding-bottom: 10px !important;
+      border-bottom: 2px solid #e2e8f0 !important;
+    }
+    .print-header h4 {
+      font-size: 26px !important;
+      font-weight: 800 !important;
+      margin: 0 0 6px 0 !important;
+      color: #0f172a !important;
+    }
+    .print-header .badge {
+      font-size: 13px !important;
+      padding: 5px 12px !important;
+      font-weight: 600 !important;
+    }
+    .print-header .meta-bar {
+      font-size: 13px !important;
+      padding: 8px 16px !important;
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important;
+      margin-top: 8px !important;
+    }
     .prod-summary-grid {
       display: flex !important;
       flex-direction: row !important;
       flex-wrap: nowrap !important;
-      gap: 4px !important;
+      gap: 8px !important;
       width: 100% !important;
-      margin-bottom: 6px !important;
+      margin-bottom: 16px !important;
     }
     .prod-summary-grid > .summary-box {
       flex: 1 1 0 !important;
       width: 0 !important;
       min-width: 0 !important;
-      padding: 4px 2px !important;
-      border-radius: 5px !important;
+      padding: 10px 4px !important;
+      border-radius: 8px !important;
       text-align: center !important;
       display: flex !important;
       flex-direction: column !important;
       justify-content: center !important;
       align-items: center !important;
-      min-height: 48px !important;
+      min-height: 84px !important;
       box-shadow: none !important;
     }
     .prod-summary-grid .tiny-label {
-      font-size: 6.5px !important;
-      font-weight: 700 !important;
+      font-size: 10.5px !important;
+      font-weight: 800 !important;
       letter-spacing: 0.2px !important;
-      margin-bottom: 2px !important;
+      margin-bottom: 4px !important;
       text-transform: uppercase !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
+      white-space: normal !important;
+      word-break: normal !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
       max-width: 100% !important;
+      line-height: 1.15 !important;
+      min-height: 26px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
     }
     .prod-summary-grid h5 {
-      font-size: 11.5px !important;
+      font-size: 24px !important;
       font-weight: 800 !important;
       margin: 0 !important;
       line-height: 1.1 !important;
@@ -1473,82 +1500,145 @@ $("#doPrint").on("click", function () {
       flex-direction: row !important;
       flex-wrap: nowrap !important;
       justify-content: space-between !important;
-      gap: 4px !important;
+      gap: 8px !important;
       width: 100% !important;
-      margin-bottom: 6px !important;
+      margin-bottom: 16px !important;
     }
     .material-badges-row .badge {
       flex: 1 1 0 !important;
-      font-size: 7.5px !important;
-      padding: 3px 4px !important;
+      font-size: 12.5px !important;
+      padding: 9px 12px !important;
       text-align: center !important;
-      border-radius: 4px !important;
+      border-radius: 8px !important;
       white-space: nowrap !important;
+      font-weight: 600 !important;
       border: 1px solid rgba(0,0,0,0.08) !important;
     }
     .card {
-      border: 1px solid #cbd5e1 !important;
-      border-radius: 5px !important;
-      padding: 5px !important;
-      margin-bottom: 6px !important;
+      border: 2px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      padding: 16px 18px !important;
+      margin-bottom: 18px !important;
       box-shadow: none !important;
       page-break-inside: avoid !important;
       break-inside: avoid !important;
+    }
+    .card h6 {
+      font-size: 15px !important;
+      font-weight: 700 !important;
+      margin: 0 !important;
+      color: #0f172a !important;
+    }
+    .card .badge {
+      font-size: 12px !important;
+      padding: 4px 10px !important;
+      font-weight: 600 !important;
     }
     .table {
       width: 100% !important;
       border-collapse: collapse !important;
       margin-bottom: 0 !important;
-      font-size: 8px !important;
+      font-size: 13.5px !important;
     }
     .table th {
-      padding: 2.5px 2px !important;
-      font-size: 7.5px !important;
+      padding: 11px 8px !important;
+      font-size: 13px !important;
       font-weight: 700 !important;
       vertical-align: middle !important;
       background-color: #f1f5f9 !important;
       border-color: #cbd5e1 !important;
-      line-height: 1.1 !important;
+      color: #1e293b !important;
+      line-height: 1.2 !important;
     }
     .table td {
-      padding: 2.5px 2px !important;
-      font-size: 8px !important;
+      padding: 11px 8px !important;
+      font-size: 13.5px !important;
       vertical-align: middle !important;
       border-color: #cbd5e1 !important;
-      line-height: 1.1 !important;
+      color: #0f172a !important;
+      line-height: 1.35 !important;
     }
-    .badge {
-      font-size: 7px !important;
-      padding: 1.5px 4px !important;
+    .table td .badge {
+      font-size: 12px !important;
+      padding: 4px 10px !important;
+    }
+    .table tfoot tr td {
+      font-size: 14px !important;
+      padding: 11px 8px !important;
+      font-weight: 800 !important;
+    }
+    .consumables-table th {
+      font-size: 13px !important;
+      padding: 10px 8px !important;
+    }
+    .consumables-table td {
+      font-size: 22px !important;
+      padding: 14px 8px !important;
+      font-weight: 800 !important;
     }
     .print-signature-block {
       display: flex !important;
       flex-direction: row !important;
       justify-content: space-between !important;
-      gap: 12px !important;
-      margin-top: 8px !important;
-      padding-top: 4px !important;
-      border-top: 1px dashed #cbd5e1 !important;
-      font-size: 8px !important;
+      gap: 20px !important;
+      margin-top: 35px !important;
+      padding-top: 16px !important;
+      border-top: 2px dashed #94a3b8 !important;
+      font-size: 13.5px !important;
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
     .print-signature-box {
       flex: 1 1 0 !important;
       text-align: center !important;
-      border-top: 1px solid #334155 !important;
-      margin-top: 22px !important;
-      padding-top: 2px !important;
-      font-weight: 600 !important;
-      color: #334155 !important;
-      font-size: 7.5px !important;
+      border-top: 2px solid #1e293b !important;
+      margin-top: 75px !important;
+      padding-top: 8px !important;
+      font-weight: 700 !important;
+      color: #0f172a !important;
+      font-size: 13.5px !important;
     }
+
+    /* Scaling modifiers */
+    body.print-scale-large { font-size: 12.5px; }
+    .print-scale-large .print-header h4 { font-size: 22px !important; }
+    .print-scale-large .prod-summary-grid > .summary-box { min-height: 74px !important; padding: 8px 4px !important; }
+    .print-scale-large .prod-summary-grid .tiny-label { font-size: 9.5px !important; min-height: 23px !important; }
+    .print-scale-large .prod-summary-grid h5 { font-size: 20px !important; }
+    .print-scale-large .material-badges-row .badge { font-size: 11.5px !important; padding: 7px 10px !important; }
+    .print-scale-large .table { font-size: 12px !important; }
+    .print-scale-large .table th, .print-scale-large .table td { padding: 8px 6px !important; }
+    .print-scale-large .consumables-table td { font-size: 18px !important; padding: 10px 6px !important; }
+    .print-scale-large .print-signature-box { margin-top: 55px !important; font-size: 12px !important; }
+
+    body.print-scale-medium { font-size: 11px; }
+    .print-scale-medium .print-header h4 { font-size: 18px !important; }
+    .print-scale-medium .prod-summary-grid > .summary-box { min-height: 64px !important; padding: 6px 3px !important; }
+    .print-scale-medium .prod-summary-grid .tiny-label { font-size: 8.5px !important; min-height: 21px !important; }
+    .print-scale-medium .prod-summary-grid h5 { font-size: 17px !important; }
+    .print-scale-medium .material-badges-row .badge { font-size: 10.5px !important; padding: 6px 8px !important; }
+    .print-scale-medium .table { font-size: 11px !important; }
+    .print-scale-medium .table th, .print-scale-medium .table td { padding: 6px 5px !important; }
+    .print-scale-medium .consumables-table td { font-size: 15px !important; padding: 8px 5px !important; }
+    .print-scale-medium .print-signature-box { margin-top: 40px !important; font-size: 11px !important; }
+
+    body.print-scale-compact { font-size: 9.5px; }
+    .print-scale-compact .print-header h4 { font-size: 15px !important; }
+    .print-scale-compact .prod-summary-grid > .summary-box { min-height: 52px !important; padding: 4px 2px !important; }
+    .print-scale-compact .prod-summary-grid .tiny-label { font-size: 7.5px !important; min-height: 18px !important; }
+    .print-scale-compact .prod-summary-grid h5 { font-size: 14px !important; }
+    .print-scale-compact .material-badges-row .badge { font-size: 9.5px !important; padding: 4px 6px !important; }
+    .print-scale-compact .table { font-size: 9.5px !important; }
+    .print-scale-compact .table th, .print-scale-compact .table td { padding: 4px 3px !important; }
+    .print-scale-compact .consumables-table td { font-size: 13px !important; padding: 5px 3px !important; }
+    .print-scale-compact .print-signature-box { margin-top: 25px !important; font-size: 9.5px !important; }
+
     @media print {
       body { padding: 0 !important; margin: 0 !important; }
     }
   </style>
 </head>
-<body>
+<body class="print-scale-${scale}">
   ${content}
 </body>
 </html>`);

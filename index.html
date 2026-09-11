@@ -17,7 +17,7 @@
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
   <!-- External CSS -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=7">
 
   <!-- JS libs -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -29,28 +29,25 @@
 <body>
 
 <!-- ===== NAVBAR ===== -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
-  <div class="container-fluid px-2 px-md-3">
-    <a class="navbar-brand fw-bold" href="#">
-      <i class="bi bi-printer"></i> Print Suite
+<nav class="navbar navbar-dark bg-primary sticky-top shadow-sm py-2">
+  <div class="container-fluid px-2 px-md-3 d-flex justify-content-between align-items-center">
+    <a class="navbar-brand fw-bold mb-0 d-flex align-items-center gap-2" href="#">
+      <i class="bi bi-printer"></i>
+      <span class="d-none d-sm-inline">Print Suite</span>
+      <span class="d-sm-none">PS</span>
     </a>
-    <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="mainNav">
-      <ul class="navbar-nav ms-auto gap-1" id="navTabs" role="tablist">
-        <li class="nav-item">
-          <a class="nav-link active" data-bs-toggle="tab" href="#tab-cost" role="tab">
-            <i class="bi bi-calculator"></i> Cost Calc
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#tab-production" role="tab">
-            <i class="bi bi-gear"></i> Production
-          </a>
-        </li>
-      </ul>
-    </div>
+    <ul class="nav nav-pills gap-1" id="navTabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#tab-cost" role="tab">
+          <i class="bi bi-calculator"></i> <span class="d-none d-sm-inline">Cost Calc</span><span class="d-sm-none">Cost</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#tab-production" role="tab">
+          <i class="bi bi-gear"></i> <span class="d-none d-sm-inline">Production</span><span class="d-sm-none">Prod</span>
+        </a>
+      </li>
+    </ul>
   </div>
 </nav>
 
@@ -170,26 +167,26 @@
           <div class="col-12 col-sm-6 col-md-3 mb-1">
             <input class="form-control form-control-sm prod-title" placeholder="Book Title">
           </div>
-          <div class="col-4 col-sm-3 col-md-2 mb-1">
+          <div class="col-6 col-sm-3 col-md-2 mb-1">
             <input class="form-control form-control-sm prod-pages" type="number" placeholder="Pages" min="4" inputmode="numeric">
           </div>
-          <div class="col-4 col-sm-3 col-md-2 mb-1">
+          <div class="col-6 col-sm-3 col-md-2 mb-1">
             <input class="form-control form-control-sm prod-qty" type="number" placeholder="Qty" min="1" inputmode="numeric">
           </div>
-          <div class="col-4 col-sm-3 col-md-2 mb-1">
+          <div class="col-5 col-sm-3 col-md-2 mb-1">
             <select class="form-select form-select-sm prod-material">
               <option value="WF">WF</option>
               <option value="MT">MT</option>
               <option value="GL">GL</option>
             </select>
           </div>
-          <div class="col-8 col-sm-4 col-md-2 mb-1">
+          <div class="col-5 col-sm-4 col-md-2 mb-1">
             <select class="form-select form-select-sm prod-binding">
               <option value="Perfect">Perfect</option>
               <option value="Staple">Staple</option>
             </select>
           </div>
-          <div class="col-4 col-sm-2 col-md-1 mb-1 text-end">
+          <div class="col-2 col-sm-2 col-md-1 mb-1 text-end">
             <button class="btn btn-outline-danger btn-sm removeRow" title="Remove"><i class="fa fa-trash"></i></button>
           </div>
         </div>
@@ -246,37 +243,37 @@
     </div>
 
     <!-- Schedule Settings -->
-    <div class="card p-2 mb-3 no-print">
-      <h6 class="fw-bold mb-2 small"><i class="fa-solid fa-calendar-days"></i> Schedule</h6>
+    <div class="card p-2 p-md-3 mb-3 no-print">
+      <h6 class="fw-bold mb-2 small"><i class="fa-solid fa-calendar-days text-primary"></i> Schedule Settings</h6>
       <div class="row g-2 align-items-end">
-        <div class="col-4 col-md-2">
+        <div class="col-12 col-sm-4 col-md-3">
           <label class="tiny-label">Start Date</label>
           <input id="prodStartDate" type="date" class="form-control form-control-sm">
         </div>
-        <div class="col-4 col-md-2">
+        <div class="col-6 col-sm-4 col-md-2">
           <label class="tiny-label">Extra Days (+)</label>
           <input id="prodExtraDays" type="number" class="form-control form-control-sm" value="0" min="0" inputmode="numeric" placeholder="0">
         </div>
-        <div class="col-4 col-md-3">
+        <div class="col-6 col-sm-4 col-md-3">
           <label class="tiny-label">Off Days (Sun auto)</label>
           <input id="prodHolidays" type="text" class="form-control form-control-sm" placeholder="2026-07-04">
         </div>
-        <div class="col-12 col-md-5">
-          <div id="holidayTags" class="d-flex flex-wrap gap-1"></div>
+        <div class="col-12 col-md-4">
+          <div id="holidayTags" class="d-flex flex-wrap gap-1 mt-1"></div>
         </div>
       </div>
     </div>
 
     <!-- Actions -->
-    <div class="text-center mb-3 no-print d-flex justify-content-center gap-2 flex-wrap">
-      <button id="prodCalculate" class="btn btn-primary btn-sm px-4">
+    <div class="text-center mb-3 no-print d-flex justify-content-center gap-2 flex-wrap prod-action-buttons">
+      <button id="prodCalculate" class="btn btn-primary btn-sm px-4 py-2 flex-fill flex-sm-grow-0">
         <i class="fa-solid fa-calculator"></i> Calculate
       </button>
-      <button id="prodExportExcel" class="btn btn-success btn-sm px-3" style="display:none">
+      <button id="prodExportExcel" class="btn btn-success btn-sm px-3 py-2 flex-fill flex-sm-grow-0" style="display:none">
         <i class="fa-solid fa-file-excel"></i> Export Excel
       </button>
-      <button id="prodPrint" class="btn btn-secondary btn-sm px-3" style="display:none">
-        <i class="fa fa-print"></i> Print
+      <button id="prodPrint" class="btn btn-secondary btn-sm px-3 py-2 flex-fill flex-sm-grow-0" style="display:none">
+        <i class="fa fa-print"></i> Print Job Ticket
       </button>
     </div>
 
@@ -346,7 +343,7 @@
               <span class="badge" style="background:#27ae60;" id="prodFinishDate">—</span>
             </div>
           </div>
-          <div class="table-responsive" style="max-height:none; overflow:visible;">
+          <div class="table-responsive">
             <table class="table table-bordered table-hover table-sm text-center align-middle mb-0 small">
               <thead>
                 <tr style="background:#f0f7ff;">
@@ -357,14 +354,13 @@
                   <th>Mat</th>
                   <th>Bind</th>
                   <th style="color:#8e44ad;">Child</th>
-                  <th style="color:#d35400;">Impress.</th>
                   <th style="color:#27ae60;">A2 Sheets</th>
                   <th style="color:#c0392b;">Plates</th>
                   <th style="color:#fff; background:#2980b9;">Days</th>
                 </tr>
               </thead>
               <tbody id="prodDetailTable">
-                <tr><td colspan="11" class="text-muted">No data yet</td></tr>
+                <tr><td colspan="10" class="text-muted">No data yet</td></tr>
               </tbody>
               <tfoot id="prodDetailFoot" style="display:none">
                 <tr style="background:#2c3e50; color:#fff; font-weight:700;">
@@ -374,7 +370,6 @@
                   <td>—</td>
                   <td>—</td>
                   <td id="prodTotalForms">0</td>
-                  <td id="prodTotalImpress">0</td>
                   <td id="prodTotalA2" style="color:#55efc4;">0</td>
                   <td id="prodTotalPlates">0</td>
                   <td id="prodTotalDaysCol" style="background:#2980b9;">0</td>
@@ -431,7 +426,7 @@
 
 <!-- ===== PRINT PREVIEW MODAL ===== -->
 <div class="modal fade" id="printPreviewModal">
-  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down modal-dialog-scrollable">
     <div class="modal-content shadow-lg border-0">
       <div class="modal-header py-2 bg-primary text-white">
         <h6 class="modal-title fw-bold"><i class="fa fa-print"></i> Custom Print Selection & Preview</h6>
@@ -498,6 +493,20 @@
             </div>
             <div id="printBookCheckboxes" class="d-flex flex-wrap gap-2"></div>
           </div>
+
+          <!-- Print Scale & Density Selector -->
+          <div id="printScaleSection" class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="small fw-bold text-dark"><i class="fa-solid fa-expand text-primary"></i> Print Size / Page Fill:</span>
+              <select class="form-select form-select-sm fw-semibold" id="printScaleSelect" style="width: auto; min-width: 230px;">
+                <option value="xl" selected>⭐ Extra Large (Full A4 Page - 1-5 Jobs)</option>
+                <option value="large">Large (High Readability - 6-10 Jobs)</option>
+                <option value="medium">Medium (Standard - 11-15 Jobs)</option>
+                <option value="compact">Compact (15+ Jobs)</option>
+              </select>
+            </div>
+            <span class="text-muted small"><i class="fa-solid fa-circle-check text-success"></i> Auto-fills A4 sheet cleanly</span>
+          </div>
         </div>
         
         <!-- Live Print Preview Container -->
@@ -520,7 +529,7 @@
 
 <!-- ===== IMPORT PREVIEW MODAL ===== -->
 <div class="modal fade" id="importPreviewModal">
-  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header py-2">
         <h6 class="modal-title"><i class="bi bi-eye"></i> Import Preview</h6>
@@ -548,6 +557,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
