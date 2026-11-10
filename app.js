@@ -446,12 +446,30 @@ const COST = {
   COVER_PACK: 400
 };
 
-let costHistory = JSON.parse(localStorage.getItem("paperHistory")) || [];
-let lastJobHash = "";
+function readHistory(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
+    return [];
+  }
+}
+let costHistory = readHistory("paperHistory");
+let prodHistory = readHistory("offsetHistory");
 
 function getCostCapacity() {
   return parseInt($("#costDailyCapacity").val()) || 50000;
 }
+
+function costPricingVisible() {
+  return $("#showCostPricing").length ? $("#showCostPricing").is(":checked") : true;
+}
+
+$("#showCostPricing").prop("checked", localStorage.getItem("showCostPricing") !== "false");
+$("#showCostPricing").on("change", function () {
+  localStorage.setItem("showCostPricing", String(this.checked));
+  if (window._costBookRows) calculateCostBooks(false);
+});
 
 function costBookRow(i) {
   return `<div class="book-row row align-items-center g-1 g-md-2" id="costCard${i}">
@@ -542,7 +560,7 @@ function calculateCostBooks(saveHistory = false) {
     $("#resultBody").append(`<tr>
       <td>${i + 1}</td><td class="text-start">${sanitize(b.title)}</td><td>${fmtInt(b.pages)}</td><td>${fmtInt(b.qty)}</td>
       <td>${b.paper}</td><td>${b.material}</td><td>${b.binding}</td>
-      <td style="color:#27ae60;font-weight:700">${fmtInt(b.sheets)}</td><td>${fmtPrice(b.pricePerBook)}</td><td style="background:#eaf6ff;color:#2980b9;font-weight:700">${roundUpHalfDay(b.sheets / getCostCapacity())}</td>
+      <td style="color:#27ae60;font-weight:700">${fmtInt(b.sheets)}</td>${costPricingVisible() ? `<td>${fmtPrice(b.pricePerBook)}</td>` : ""}<td style="background:#eaf6ff;color:#2980b9;font-weight:700">${roundUpHalfDay(b.sheets / getCostCapacity())}</td>
     </tr>`);
   });
 
@@ -565,7 +583,7 @@ function calculateCostBooks(saveHistory = false) {
     { title: "Inside Sheets", value: fmtInt(totalDigitalSheets), bg: "#e8fdf5", color: "#27ae60" },
     { title: "Inside Packs", value: fmtInt(paperGroups.filter(g => g.label !== "Cover").reduce((n,g) => n + g.packs, 0)), bg: "#fef9e7", color: "#f39c12" },
     { title: "Days", value: fmtInt(totalDays), bg: "#f5eef8", color: "#8e44ad" },
-    { title: "Total Cost", value: fmtPrice(totalCost), bg: "#fdedec", color: "#e74c3c" },
+    ...(costPricingVisible() ? [{ title: "Total Cost", value: fmtPrice(totalCost), bg: "#fdedec", color: "#e74c3c" }] : []),
     { title: "Cover Packs", value: fmtInt(coverPacks), bg: "#fef9e7", color: "#f39c12" }
   ];
   $("#summaryCards").html(cards.map(c => `<div class="col-4 col-md-3 col-lg"><div class="summary-box" style="background:${c.bg}; border:2px solid ${c.color};"><div class="tiny-label text-uppercase">${c.title}</div><h5 class="mb-0 fw-bold" style="color:${c.color};">${c.value}</h5></div></div>`).join(""));
@@ -577,7 +595,8 @@ function calculateCostBooks(saveHistory = false) {
   $("#costSpeedBadge").text(`${fmtInt(capacity)} Sheets/Day`);
   $("#costFinishDate").text(`${startDate} → ${schedule.finishDate}`);
   $("#costMaterialBreakdown").html(digitalPaperBadges(bookRows));
-  $("#costDetailFoot").html(`<tr class="table-light fw-bold"><td colspan="3">TOTAL</td><td>${fmtInt(totalBooksQty)}</td><td colspan="3"></td><td>${fmtInt(totalDigitalSheets)}</td><td>${fmtPrice(totalCost)}</td><td>${totalDays}</td></tr>`);
+  $("#costDetailFoot").html(`<tr class="table-light fw-bold"><td colspan="3">TOTAL</td><td>${fmtInt(totalBooksQty)}</td><td colspan="3"></td><td>${fmtInt(totalDigitalSheets)}</td>${costPricingVisible() ? `<td>${fmtPrice(totalCost)}</td>` : ""}<td>${totalDays}</td></tr>`);
+  $(".cost-pricing-column").toggle(costPricingVisible());
   $("#resultArea").show();
   $("#btnExportExcel, #costPrint").toggle(bookRows.length > 0);
 
@@ -589,22 +608,22 @@ function calculateCostBooks(saveHistory = false) {
 }
 
 function saveCostHistory(n, totalBooksQty, totalCost, totalDays, bookRows) {
-  const hash = btoa(bookRows.map((b) => `${b.title}-${b.pages}-${b.qty}-${b.paper}-${b.material}-${b.binding}`).join("|"));
-  if (hash === lastJobHash) return;
-  lastJobHash = hash;
-
+  if (!bookRows.length) return;
   const entry = {
     timestamp: new Date().toLocaleString("en-US"),
-    books: n,
+    books: bookRows.length,
     totalBooksQty,
     totalCost,
     totalDays,
+    settings: Object.fromEntries(["costDailyCapacity", "costExtraDays", "costStartDate", "costHolidays"].map(id => [id, document.getElementById(id).value])),
     bookRows: bookRows.map((b) => ({ title: b.title, pages: b.pages, qty: b.qty, paper: b.paper, material: b.material, binding: b.binding }))
   };
-
+  const signature = JSON.stringify({settings: entry.settings, bookRows: entry.bookRows});
+  if (costHistory[0]?.signature === signature) return;
+  entry.signature = signature;
   costHistory.unshift(entry);
   if (costHistory.length > 50) costHistory.pop();
-  localStorage.setItem("paperHistory", JSON.stringify(costHistory));
+  try { localStorage.setItem("paperHistory", JSON.stringify(costHistory)); } catch (error) { console.warn("Could not save Digital history", error); }
   updateCostHistoryUI();
 }
 
@@ -613,7 +632,7 @@ function updateCostHistoryUI() {
     <div class="history-card p-2 mb-1 rounded border small" data-index="${i}" role="button">
       <b>${h.timestamp}</b> | ${h.books} books | ${fmtPrice(h.totalCost)} | ${h.totalDays}d
     </div>
-  `).join("");
+  `).join("") || '<div class="text-muted small p-2">No saved Digital jobs yet. Calculate a job to save it here.</div>';
   $("#historyCards").html(html);
 }
 
@@ -626,9 +645,15 @@ $("#numBooks").on("input", function () {
 $("#btnCalculate").on("click", () => calculateCostBooks(true));
 $("#toggleHistory").on("click", () => $("#historyArea").toggle());
 $("#hideHistoryBtn").on("click", () => $("#historyArea").hide());
+$("#clearHistoryBtn").on("click", function () {
+  costHistory = [];
+  localStorage.removeItem("paperHistory");
+  updateCostHistoryUI();
+});
 
 $("#historyCards").on("click", ".history-card", function () {
   const h = costHistory[$(this).data("index")];
+  if (!h) return;
   $("#numBooks").val(h.books);
   createBookTable(h.books);
   h.bookRows.forEach((b, i) => {
@@ -639,6 +664,7 @@ $("#historyCards").on("click", ".history-card", function () {
     $(`#costMaterial${i + 1}`).val(b.material);
     $(`#costBinding${i + 1}`).val(b.binding || (b.paper === "A3" ? "Staple" : "Perfect"));
   });
+  if (h.settings) Object.entries(h.settings).forEach(([id, value]) => $(`#${id}`).val(value));
   calculateCostBooks(false);
   $("#historyArea").hide();
 });
@@ -667,12 +693,12 @@ $("#btnExportExcel").on("click", function () {
   data.push(["Work Days", window._costData.totalDays]);
   data.push(["Start Date", window._costData.startDate]);
   data.push(["Finish Date", window._costData.finishDate]);
-  data.push(["#", "Title", "Pages", "Qty", "Paper", "Material", "Binding", "Price/Book", "Sheets", "Days"]);
+  data.push(costPricingVisible() ? ["#", "Title", "Pages", "Qty", "Paper", "Material", "Binding", "Price/Book", "Sheets", "Days"] : ["#", "Title", "Pages", "Qty", "Paper", "Material", "Binding", "Sheets", "Days"]);
   bookRows.forEach((b, i) => {
-    data.push([i + 1, b.title, b.pages, b.qty, b.paper, b.material, b.binding, Number(b.pricePerBook.toFixed(2)), b.sheets, roundUpHalfDay(b.sheets / window._costData.capacity)]);
+    data.push(costPricingVisible() ? [i + 1, b.title, b.pages, b.qty, b.paper, b.material, b.binding, Number(b.pricePerBook.toFixed(2)), b.sheets, roundUpHalfDay(b.sheets / window._costData.capacity)] : [i + 1, b.title, b.pages, b.qty, b.paper, b.material, b.binding, b.sheets, roundUpHalfDay(b.sheets / window._costData.capacity)]);
   });
   data.push([]);
-  data.push(["", "", "", "", "", "", "Total Cost:", Number(totalCost.toFixed(2))]);
+  if (costPricingVisible()) data.push(["", "", "", "", "", "", "Total Cost:", Number(totalCost.toFixed(2))]);
 
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws["!cols"] = [{ wch: 4 }, { wch: 20 }, { wch: 8 }, { wch: 10 }, { wch: 6 }, { wch: 8 }, { wch: 10 }, { wch: 10 }];
@@ -778,7 +804,7 @@ function calcFinishDate(workDays, startStr = document.getElementById("prodStartD
 }
 
 // --- Production Calculate ---
-function runProductionCalc() {
+function runProductionCalc(saveHistory = false) {
   const extraDaysInput = document.getElementById("prodExtraDays");
   const extraDays = extraDaysInput.value === "" ? 0 : Number(extraDaysInput.value);
   if (!Number.isFinite(extraDays) || extraDays < 0 || !Number.isInteger(extraDays * 2)) {
@@ -916,6 +942,8 @@ function runProductionCalc() {
 
   if (hasError) {
     Swal.fire("Validation Errors", errorMessages.join("<br>"), "error");
+    window._prodData = null;
+    $("#prodPrint, #prodExportExcel").hide();
     return;
   }
 
@@ -925,7 +953,8 @@ function runProductionCalc() {
 
   if (processedCount === 0) {
     detailTable.innerHTML = '<tr><td colspan="10" class="text-muted">Please enter book data above</td></tr>';
-    $("#prodPrint").hide();
+    window._prodData = null;
+    $("#prodPrint, #prodExportExcel").hide();
     $("#prodDetailFoot").hide();
     return;
   }
@@ -1043,7 +1072,70 @@ function runProductionCalc() {
 
   $("#prodPrint").show();
   $("#prodExportExcel").show();
+  if (saveHistory) saveProductionHistory(window._prodData);
 }
+
+const productionSettingIds = ["prodFormsPerDay", "prodWaste", "prodBlanketLife", "prodWfPack", "prodMtPack", "prodGlPack", "prodCoverPack", "prodInkCap", "prodAluCap", "prodPowderCap", "prodGlueCap", "prodLamCap", "prodStapleCap", "prodExtraDays", "prodStartDate"];
+
+function saveProductionHistory(data) {
+  const entry = {
+    timestamp: new Date().toLocaleString(),
+    settings: Object.fromEntries(productionSettingIds.map(id => [id, document.getElementById(id).value])),
+    holidays: [...prodHolidays],
+    books: data.books.map(book => ({
+      title: book.title,
+      pages: book.originalPages,
+      qty: book.rawQty,
+      material: book.material,
+      binding: book.binding
+    }))
+  };
+  const signature = JSON.stringify({settings: entry.settings, holidays: entry.holidays, books: entry.books});
+  if (prodHistory[0]?.signature === signature) return;
+  entry.signature = signature;
+  prodHistory.unshift(entry);
+  if (prodHistory.length > 50) prodHistory.pop();
+  try { localStorage.setItem("offsetHistory", JSON.stringify(prodHistory)); } catch (error) { console.warn("Could not save Offset history", error); }
+  updateProductionHistoryUI();
+}
+
+function updateProductionHistoryUI() {
+  const html = prodHistory.map((entry, index) => {
+    const qty = entry.books.reduce((sum, book) => sum + (Number(book.qty) || 0), 0);
+    const firstTitle = entry.books[0]?.title || "Offset job";
+    return `<div class="history-card p-2 mb-1 rounded border small" data-index="${index}" role="button"><b>${sanitize(entry.timestamp)}</b> | ${sanitize(firstTitle)}${entry.books.length > 1 ? ` +${entry.books.length - 1} books` : ""} | Qty ${fmtInt(qty)}</div>`;
+  }).join("") || '<div class="text-muted small p-2">No saved Offset jobs yet. Calculate a job to save it here.</div>';
+  $("#prodHistoryCards").html(html);
+}
+
+$("#toggleProdHistory").on("click", () => $("#prodHistoryArea").toggle());
+$("#clearProdHistory").on("click", function () {
+  prodHistory = [];
+  localStorage.removeItem("offsetHistory");
+  updateProductionHistoryUI();
+});
+$("#prodHistoryCards").on("click", ".history-card", function () {
+  const entry = prodHistory[$(this).data("index")];
+  if (!entry) return;
+  productionSettingIds.forEach(id => { if (entry.settings?.[id] !== undefined) $(`#${id}`).val(entry.settings[id]); });
+  prodHolidays = Array.isArray(entry.holidays) ? [...entry.holidays] : [];
+  renderHolidayTags();
+  const container = document.getElementById("bookContainer");
+  container.innerHTML = "";
+  (entry.books || []).forEach(book => {
+    const row = createProdRow();
+    row.querySelector(".prod-title").value = book.title || "";
+    row.querySelector(".prod-pages").value = book.pages;
+    row.querySelector(".prod-qty").value = book.qty;
+    row.querySelector(".prod-material").value = book.material || "WF";
+    row.querySelector(".prod-binding").value = book.binding || "Perfect";
+    container.appendChild(row);
+  });
+  if (!container.children.length) container.appendChild(createProdRow());
+  $("#prodHistoryArea").hide();
+  runProductionCalc(false);
+});
+updateProductionHistoryUI();
 
 // Function to update speed badge dynamically in real time
 function updateSpeedBadge() {
@@ -1055,7 +1147,7 @@ function updateSpeedBadge() {
 updateSpeedBadge();
 
 // --- Button click + auto-calculate on input change ---
-$("#prodCalculate").on("click", runProductionCalc);
+$("#prodCalculate").on("click", () => runProductionCalc(true));
 
 // Auto-calculate & update speed badge dynamically whenever any input changes
 $(document).on("input change keyup", "#bookContainer input, #bookContainer select, #prodSettings input, #prodFormsPerDay, #prodWaste, #prodBlanketLife, #prodWfPack, #prodMtPack, #prodGlPack, #prodCoverPack, #prodInkCap, #prodAluCap, #prodPowderCap, #prodGlueCap, #prodLamCap, #prodStapleCap, #prodExtraDays, #prodStartDate", function () {
@@ -1724,14 +1816,14 @@ function buildDigitalPrintPreview() {
     ["Books",books.length,"#64748b"], ["Total Qty",fmtInt(qty),"#2563eb"],
     ["Inside Sheets",fmtInt(sheets),"#16a34a"], ["Work Days",days,"#8e44ad"],
     ["Inside Packs",fmtInt(groups.filter(g=>g.label!=="Cover").reduce((n,g)=>n+g.packs,0)),"#d68910"],
-    ["Cover Packs",Math.ceil(qty/COST.COVER_PACK),"#dc2626"], ["Total Cost",fmtPrice(cost),"#16a085"]
+    ["Cover Packs",Math.ceil(qty/COST.COVER_PACK),"#dc2626"], ...(costPricingVisible() ? [["Total Cost",fmtPrice(cost),"#16a085"]] : [])
   ];
   const scale = $("#printScaleSelect").val() || "xl";
   let html = `<div class="print-container print-scale-${scale}">`;
   if ($("#optHeader").is(":checked")) html += `<div class="print-header mb-3 pb-2 border-bottom"><h4 class="fw-bold">Digital Production Job Ticket</h4><div class="meta-bar d-flex gap-3 flex-wrap"><span><b>Speed:</b> ${fmtInt(d.capacity)} Sheets/Day</span><span><b>Work Days:</b> ${days}</span><span><b>Extra Days:</b> ${books.length ? d.extraDays : 0}</span><span><b>Start:</b> ${d.startDate}</span><span><b>Finish:</b> ${schedule.finishDate}</span></div></div>`;
   if ($("#optSummary").is(":checked")) html += `<div class="prod-summary-grid mb-3">${cards.map(([label,value,color])=>`<div class="summary-box" style="background:#f8fafc;border:2px solid ${color}"><div class="tiny-label">${label}</div><h5 style="color:${color}" class="mb-0 fw-bold">${value}</h5></div>`).join("")}</div>`;
   if ($("#optMaterials").is(":checked")) html += `<div class="material-badges-row mb-3">${digitalPaperBadges(books)}</div>`;
-  if ($("#optBreakdown").is(":checked")) html += `<div class="card p-3 mb-3 border"><div class="d-flex justify-content-between mb-2"><h6 class="fw-bold">Job Breakdown</h6><span class="badge bg-primary">${fmtInt(d.capacity)} Sheets/Day</span></div><table class="table table-bordered text-center align-middle"><thead><tr><th>#</th><th>Title</th><th>Pg</th><th>Qty</th><th>Paper</th><th>Mat</th><th>Bind</th><th>Sheets</th><th>Price/Book</th><th>Days</th></tr></thead><tbody>${books.map((b,i)=>`<tr><td>${i+1}</td><td class="text-start fw-semibold">${sanitize(b.title)}</td><td>${b.pages}</td><td>${fmtInt(b.qty)}</td><td>${b.paper}</td><td>${b.material}</td><td>${b.binding}</td><td style="color:#16a34a;font-weight:700">${fmtInt(b.sheets)}</td><td>${fmtPrice(b.pricePerBook)}</td><td style="background:#eff6ff;color:#2563eb;font-weight:700">${roundUpHalfDay(b.sheets/d.capacity)}</td></tr>`).join("") || '<tr><td colspan="10">No books selected</td></tr>'}</tbody><tfoot><tr class="table-light fw-bold"><td colspan="3">TOTAL</td><td>${fmtInt(qty)}</td><td colspan="3"></td><td>${fmtInt(sheets)}</td><td>${fmtPrice(cost)}</td><td>${days}</td></tr></tfoot></table></div>`;
+  if ($("#optBreakdown").is(":checked")) html += `<div class="card p-3 mb-3 border"><div class="d-flex justify-content-between mb-2"><h6 class="fw-bold">Job Breakdown</h6><span class="badge bg-primary">${fmtInt(d.capacity)} Sheets/Day</span></div><table class="table table-bordered text-center align-middle"><thead><tr><th>#</th><th>Title</th><th>Pg</th><th>Qty</th><th>Paper</th><th>Mat</th><th>Bind</th><th>Sheets</th>${costPricingVisible() ? "<th>Price/Book</th>" : ""}<th>Days</th></tr></thead><tbody>${books.map((b,i)=>`<tr><td>${i+1}</td><td class="text-start fw-semibold">${sanitize(b.title)}</td><td>${b.pages}</td><td>${fmtInt(b.qty)}</td><td>${b.paper}</td><td>${b.material}</td><td>${b.binding}</td><td style="color:#16a34a;font-weight:700">${fmtInt(b.sheets)}</td>${costPricingVisible() ? `<td>${fmtPrice(b.pricePerBook)}</td>` : ""}<td style="background:#eff6ff;color:#2563eb;font-weight:700">${roundUpHalfDay(b.sheets/d.capacity)}</td></tr>`).join("") || `<tr><td colspan="${costPricingVisible() ? 10 : 9}">No books selected</td></tr>`}</tbody><tfoot><tr class="table-light fw-bold"><td colspan="3">TOTAL</td><td>${fmtInt(qty)}</td><td colspan="3"></td><td>${fmtInt(sheets)}</td>${costPricingVisible() ? `<td>${fmtPrice(cost)}</td>` : ""}<td>${days}</td></tr></tfoot></table></div>`;
   if ($("#optSignatures").is(":checked")) html += `<div class="print-signature-block"><div class="print-signature-box">Prepared By</div><div class="print-signature-box">Production Mgr</div><div class="print-signature-box">Press Operator</div><div class="print-signature-box">QA / Delivery</div></div>`;
   $("#printArea").html(html + "</div>");
 }
